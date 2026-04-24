@@ -1,14 +1,43 @@
-import { ReactNode } from "react";
+import { ReactNode, useEffect, useState } from "react";
 import { Link, useLocation } from "wouter";
 import { LayoutDashboard, Sofa, Box, Settings, LogOut } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { auth } from "@/lib/firebase";
+import { onAuthStateChanged, signOut } from "firebase/auth";
 
 interface AdminLayoutProps {
   children: ReactNode;
 }
 
 export default function AdminLayout({ children }: AdminLayoutProps) {
-  const [location] = useLocation();
+  const [location, setLocation] = useLocation();
+  const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null);
+
+  useEffect(() => {
+    const unsubscribe = onAuthStateChanged(auth, (user) => {
+      if (user) {
+        setIsAuthenticated(true);
+      } else {
+        setIsAuthenticated(false);
+        setLocation("/admin/login");
+      }
+    });
+
+    return () => unsubscribe();
+  }, [setLocation]);
+
+  const handleLogout = async () => {
+    try {
+      await signOut(auth);
+      setLocation("/admin/login");
+    } catch (error) {
+      console.error("Çıkış başarısız", error);
+    }
+  };
+
+  if (isAuthenticated === null) {
+    return <div className="min-h-screen flex items-center justify-center text-lg text-primary font-medium">Yetki Kontrolü Yapılıyor...</div>;
+  }
 
   const navItems = [
     { name: "Dashboard", path: "/admin", icon: LayoutDashboard },
@@ -50,7 +79,10 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
           })}
         </nav>
         <div className="p-4 border-t">
-          <button className="flex w-full items-center px-4 py-3 text-sm font-medium text-red-600 rounded-md hover:bg-red-50 transition-colors">
+          <button 
+            onClick={handleLogout}
+            className="flex w-full items-center px-4 py-3 text-sm font-medium text-red-600 rounded-md hover:bg-red-50 transition-colors"
+          >
             <LogOut className="mr-3 h-5 w-5" />
             Çıkış Yap
           </button>

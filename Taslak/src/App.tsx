@@ -11,6 +11,7 @@ import AdminLayout from "@/pages/admin/AdminLayout";
 import AdminDashboard from "@/pages/admin/AdminDashboard";
 import AdminProducts from "@/pages/admin/AdminProducts";
 import AdminFabrics from "@/pages/admin/AdminFabrics";
+import Login from "@/pages/admin/Login";
 
 const queryClient = new QueryClient();
 
@@ -30,6 +31,7 @@ function AdminRoutes() {
 function Router() {
   return (
     <Switch>
+      <Route path="/admin/login" component={Login} />
       <Route path="/admin/*" component={AdminRoutes} />
       <Route path="/admin" component={AdminRoutes} />
       <Route path="/" component={Home} />

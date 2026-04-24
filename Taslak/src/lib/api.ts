@@ -1,76 +1,59 @@
+import { db, storage } from "./firebase";
+import { collection, getDocs, doc, setDoc, deleteDoc, addDoc } from "firebase/firestore";
+import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
+
 export const fetchFabrics = async () => {
-  const res = await fetch('/api/fabrics');
-  if (!res.ok) throw new Error('Kumaşlar yüklenemedi');
-  return res.json();
+  const querySnapshot = await getDocs(collection(db, "fabrics"));
+  return querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
 };
 
 export const fetchProducts = async () => {
-  const res = await fetch('/api/products');
-  if (!res.ok) throw new Error('Ürünler yüklenemedi');
-  return res.json();
+  const querySnapshot = await getDocs(collection(db, "products"));
+  return querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
 };
 
 export const fetchCategories = async () => {
-  const res = await fetch('/api/categories');
-  if (!res.ok) throw new Error('Kategoriler yüklenemedi');
-  return res.json();
+  const querySnapshot = await getDocs(collection(db, "categories"));
+  return querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
 };
 
 export const saveFabric = async (fabric: any) => {
-  const isNew = !fabric.id;
-  const res = await fetch(`/api/fabrics${isNew ? '' : `/${fabric.id}`}`, {
-    method: isNew ? 'POST' : 'PUT',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(fabric),
-  });
-  if (!res.ok) throw new Error('Kumaş kaydedilemedi');
-  return res.json();
+  const { id, ...data } = fabric;
+  if (id && !id.startsWith('new-')) {
+    await setDoc(doc(db, "fabrics", id), data);
+    return { id, ...data };
+  } else {
+    const docRef = await addDoc(collection(db, "fabrics"), data);
+    return { ...data, id: docRef.id };
+  }
 };
 
 export const deleteFabric = async (id: string) => {
-  const res = await fetch(`/api/fabrics/${id}`, { method: 'DELETE' });
-  if (!res.ok) throw new Error('Kumaş silinemedi');
-  return res.json();
+  await deleteDoc(doc(db, "fabrics", id));
+  return { success: true };
 };
 
 export const saveProduct = async (product: any) => {
-  const isNew = !product.id;
-  const res = await fetch(`/api/products${isNew ? '' : `/${product.id}`}`, {
-    method: isNew ? 'POST' : 'PUT',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(product),
-  });
-  if (!res.ok) throw new Error('Ürün kaydedilemedi');
-  return res.json();
+  const { id, ...data } = product;
+  if (id && !id.startsWith('new-')) {
+    await setDoc(doc(db, "products", id), data);
+    return { id, ...data };
+  } else {
+    const docRef = await addDoc(collection(db, "products"), data);
+    return { ...data, id: docRef.id };
+  }
 };
 
 export const deleteProduct = async (id: string) => {
-  const res = await fetch(`/api/products/${id}`, { method: 'DELETE' });
-  if (!res.ok) throw new Error('Ürün silinemedi');
-  return res.json();
+  await deleteDoc(doc(db, "products", id));
+  return { success: true };
 };
 
 export const uploadFile = async (file: File): Promise<string> => {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.readAsDataURL(file);
-    reader.onload = async () => {
-      try {
-        const res = await fetch('/api/upload', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            filename: file.name,
-            data: reader.result
-          })
-        });
-        if (!res.ok) throw new Error('Dosya yüklenemedi');
-        const json = await res.json();
-        resolve(json.url);
-      } catch (err) {
-        reject(err);
-      }
-    };
-    reader.onerror = error => reject(error);
-  });
+  const fileExt = file.name.split('.').pop();
+  const fileName = `${Date.now()}-${Math.random().toString(36).substring(7)}.${fileExt}`;
+  const storageRef = ref(storage, `uploads/${fileName}`);
+  
+  await uploadBytes(storageRef, file);
+  return await getDownloadURL(storageRef);
 };
