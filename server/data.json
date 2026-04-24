@@ -1,0 +1,61 @@
+{
+  "categories": [
+    {
+      "id": "1",
+      "name": "Salon Takımları",
+      "slug": "salon"
+    },
+    {
+      "id": "2",
+      "name": "Bahçe Mobilyaları",
+      "slug": "bahce"
+    },
+    {
+      "id": "3",
+      "name": "Mutfak Tasarımları",
+      "slug": "mutfak"
+    }
+  ],
+  "fabrics": [
+    {
+      "id": "f1",
+      "name": "Premium Kadife",
+      "image_url": "/images/fabric-detail.png",
+      "price_per_sqm": 1200,
+      "is_active": true
+    },
+    {
+      "id": "f2",
+      "name": "İtalyan Keten",
+      "image_url": "/images/fabric-detail.png",
+      "price_per_sqm": 900,
+      "is_active": true
+    },
+    {
+      "id": "f3",
+      "name": "Dış Mekan Akrilik",
+      "image_url": "/images/fabric-detail.png",
+      "price_per_sqm": 1500,
+      "is_active": true
+    }
+  ],
+  "products": [
+    {
+      "id": "p1777037096586",
+      "title": "swedfsdf",
+      "description": "rtert",
+      "category_id": "1",
+      "base_price_without_fabric": 33333,
+      "fabric_sqm_required": 12,
+      "default_fabric_id": "",
+      "is_published": true,
+      "images": [
+        "/uploads/nr-alize-luxury-koltuk-takimi-3-1777037065123.webp",
+        "/uploads/nr-alize-luxury-koltuk-takimi-4-776x486-1777037068794.webp"
+      ],
+      "manufacturer_name": "sdfsdf",
+      "manufacturer_contact": "3242342343 dfsdfwewe",
+      "internal_notes": "sdsertwer"
+    }
+  ]
+}
