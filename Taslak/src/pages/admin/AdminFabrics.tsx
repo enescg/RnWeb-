@@ -82,15 +82,19 @@ export default function AdminFabrics() {
             />
           </div>
           <div>
-            <Label htmlFor="price">m² Fiyatı (₺)</Label>
+            <Label htmlFor="price">m² Fiyatı ($)</Label>
             <Input
               id="price"
-              type="number"
-              value={formData.price_per_sqm}
-              onChange={(e) =>
-                setFormData({ ...formData, price_per_sqm: Number(e.target.value) })
-              }
+              type="text"
+              value={formData.price_per_sqm ? formData.price_per_sqm.toLocaleString('tr-TR') : ''}
+              onChange={(e) => {
+                  const val = e.target.value.replace(/\./g, '');
+                  if (!isNaN(Number(val))) {
+                      setFormData({ ...formData, price_per_sqm: Number(val) });
+                  }
+              }}
               required
+              placeholder="Örn: 1.500"
             />
           </div>
           <div>
@@ -150,7 +154,7 @@ export default function AdminFabrics() {
                     )}
                   </td>
                   <td className="px-4 py-3 font-medium">{fabric.name}</td>
-                  <td className="px-4 py-3">{fabric.price_per_sqm} ₺</td>
+                  <td className="px-4 py-3">{fabric.price_per_sqm.toLocaleString('tr-TR')} $</td>
                   <td className="px-4 py-3">
                     <span
                       className={`px-2 py-1 rounded-full text-xs ${

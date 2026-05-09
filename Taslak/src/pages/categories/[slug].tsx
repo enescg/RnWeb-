@@ -1,13 +1,16 @@
 import { useParams, Link } from "wouter";
 import { useState } from "react";
 import { motion } from "framer-motion";
-import { Grid3x3, List, Heart, ShoppingBag } from "lucide-react";
+import { Grid3x3, List, Heart, Truck } from "lucide-react";
 import Navbar from "@/components/Navbar";
+import { useFavorites } from "@/contexts/FavoritesContext";
 
 // --- Product Card ---
 
 const ProductCard = ({ product, index }: { product: any; index: number }) => {
     const [isHovered, setIsHovered] = useState(false);
+    const { toggleFavorite, isFavorite } = useFavorites();
+    const isFav = isFavorite(product.id);
 
     return (
         <motion.div
@@ -42,15 +45,30 @@ const ProductCard = ({ product, index }: { product: any; index: number }) => {
                     </Link>
                 </motion.div>
                 <div className="absolute top-4 right-4 flex flex-col gap-2">
-                    <button className="w-10 h-10 bg-white/90 backdrop-blur-sm flex items-center justify-center hover:bg-primary hover:text-white transition-colors"><Heart size={18} /></button>
-                    <button className="w-10 h-10 bg-white/90 backdrop-blur-sm flex items-center justify-center hover:bg-primary hover:text-white transition-colors"><ShoppingBag size={18} /></button>
+                    <button 
+                        onClick={(e) => { e.preventDefault(); e.stopPropagation(); toggleFavorite(product.id); }}
+                        className="w-10 h-10 bg-white/90 backdrop-blur-sm flex items-center justify-center hover:bg-primary hover:text-white transition-colors"
+                    >
+                        <Heart size={18} className={isFav ? "fill-primary text-primary" : ""} />
+                    </button>
                 </div>
             </div>
-            <div className="px-1">
-                <p className="text-xs text-primary uppercase tracking-widest mb-1.5">{product.category}</p>
-                <h3 className="text-lg font-serif text-foreground mb-1 group-hover:text-primary transition-colors">{product.name}</h3>
-                <p className="text-sm text-foreground/50 font-light mb-2">{product.shortDescription}</p>
-                <p className="text-sm font-medium text-foreground/70">{product.price}</p>
+            <div className="px-1 mt-3">
+                <h3 className="text-3xl font-sans font-semibold text-gray-800 mb-2 group-hover:text-primary transition-colors">{product.name}</h3>
+                <div className="flex flex-col mb-3">
+                    <span className="text-rose-600 font-medium text-lg">
+                        {product.price}
+                    </span>
+                    <span className="text-rose-800 font-bold text-xl">
+                        Sepette: {product.discountedPrice}
+                    </span>
+                </div>
+                {product.isFreeShipping && (
+                    <div className="flex items-center gap-1.5 bg-gray-100 text-gray-600 text-xs px-2.5 py-1 rounded-md w-fit font-medium">
+                        <Truck size={14} />
+                        <span>Ücretsiz Teslimat</span>
+                    </div>
+                )}
             </div>
         </motion.div>
     );
@@ -135,8 +153,10 @@ export default function CategoryPage() {
                             name: product.title,
                             category: category.name,
                             categorySlug: category.slug,
-                            price: product.base_price_without_fabric + " ₺",
+                            price: (product.base_price_without_fabric * 1.1).toLocaleString('tr-TR', { maximumFractionDigits: 0 }) + " TL",
+                            discountedPrice: product.base_price_without_fabric.toLocaleString('tr-TR') + " TL",
                             images: product.images,
+                            isFreeShipping: product.is_free_shipping !== false,
                             tag: "",
                             shortDescription: product.description.substring(0, 50) + "...",
                             description: product.description,

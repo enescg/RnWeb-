@@ -85,7 +85,7 @@ export default function FabricSidePanel({ isOpen, onClose, fabrics, selectedFabr
                           {isSelected && <Check size={18} className="text-primary" />}
                         </div>
                         <p className="text-sm text-gray-500">
-                          {fabric.price_per_sqm} ₺ / m²
+                          {fabric.price_per_sqm.toLocaleString('tr-TR')} $ / m²
                         </p>
                       </div>
                     </button>

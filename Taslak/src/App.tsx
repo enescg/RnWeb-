@@ -6,12 +6,23 @@ import NotFound from "@/pages/not-found";
 import Home from "@/pages/home";
 import CategoryPage from "@/pages/categories/[slug]";
 import ProductPage from "@/pages/product/[slug]";
+import CartPage from "@/pages/Cart";
 
 import AdminLayout from "@/pages/admin/AdminLayout";
 import AdminDashboard from "@/pages/admin/AdminDashboard";
 import AdminProducts from "@/pages/admin/AdminProducts";
 import AdminFabrics from "@/pages/admin/AdminFabrics";
 import Login from "@/pages/admin/Login";
+
+import { AuthProvider } from "@/contexts/AuthContext";
+import { CartProvider } from "@/contexts/CartContext";
+import { FavoritesProvider } from "@/contexts/FavoritesContext";
+import UserAuth from "@/pages/auth/UserAuth";
+import ProfileOrders from "@/pages/profile/Orders";
+import ProfileCoupons from "@/pages/profile/Coupons";
+import ProfileInfo from "@/pages/profile/Info";
+import ProfileAddresses from "@/pages/profile/Addresses";
+import ProfileFavorites from "@/pages/profile/Favorites";
 
 const queryClient = new QueryClient();
 
@@ -34,9 +45,16 @@ function Router() {
       <Route path="/admin/login" component={Login} />
       <Route path="/admin/*" component={AdminRoutes} />
       <Route path="/admin" component={AdminRoutes} />
+      <Route path="/auth" component={UserAuth} />
+      <Route path="/profile/orders" component={ProfileOrders} />
+      <Route path="/profile/coupons" component={ProfileCoupons} />
+      <Route path="/profile/info" component={ProfileInfo} />
+      <Route path="/profile/addresses" component={ProfileAddresses} />
+      <Route path="/profile/favorites" component={ProfileFavorites} />
       <Route path="/" component={Home} />
       <Route path="/categories/:slug" component={CategoryPage} />
       <Route path="/product/:slug" component={ProductPage} />
+      <Route path="/cart" component={CartPage} />
       <Route component={NotFound} />
     </Switch>
   );
@@ -44,14 +62,20 @@ function Router() {
 
 function App() {
   return (
-    <QueryClientProvider client={queryClient}>
-      <TooltipProvider>
-        <WouterRouter base={import.meta.env.BASE_URL.replace(/\/$/, "")}>
-          <Router />
-        </WouterRouter>
-        <Toaster />
-      </TooltipProvider>
-    </QueryClientProvider>
+    <AuthProvider>
+      <CartProvider>
+        <FavoritesProvider>
+          <QueryClientProvider client={queryClient}>
+            <TooltipProvider>
+              <WouterRouter base={import.meta.env.BASE_URL.replace(/\/$/, "")}>
+                <Router />
+              </WouterRouter>
+              <Toaster />
+            </TooltipProvider>
+          </QueryClientProvider>
+        </FavoritesProvider>
+      </CartProvider>
+    </AuthProvider>
   );
 }
 

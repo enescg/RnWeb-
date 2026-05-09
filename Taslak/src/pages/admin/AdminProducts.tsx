@@ -26,7 +26,26 @@ export default function AdminProducts() {
     images: [] as string[],
     manufacturer_name: "",
     manufacturer_contact: "",
-    internal_notes: ""
+    internal_notes: "",
+    is_featured: false,
+    is_free_shipping: true,
+    is_free_installation: true,
+    delivery_time_weeks: 4,
+    delivery_info: "Tüm Türkiye'ye Ücretsiz Teslimat",
+    installment_info: "Peşin fiyatına 3 taksit seçeneği",
+    features: {
+      fabric_info: "",
+      function: "",
+      skeleton: "",
+      seating_inner: "",
+      seating_softness: "",
+      leg_material: "",
+      leg_color: "",
+      assembly_parts: "",
+      fabric_material: "",
+      extra_info: ""
+    },
+    set_items: [] as { id: string, name: string, description: string, base_price: number, fabric_sqm: number, leg_color: string, default_quantity: number, image_url?: string, dimensions?: { width: string, depth: string, height: string } }[]
   };
 
   const [formData, setFormData] = useState(defaultState);
@@ -67,7 +86,12 @@ export default function AdminProducts() {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    saveMutation.mutate(formData);
+    const payload = { ...formData };
+    if (payload.set_items && payload.set_items.length > 0) {
+        payload.base_price_without_fabric = payload.set_items.reduce((total, item) => total + (item.base_price * item.default_quantity), 0);
+        payload.fabric_sqm_required = payload.set_items.reduce((total, item) => total + (item.fabric_sqm * item.default_quantity), 0);
+    }
+    saveMutation.mutate(payload);
   };
 
   const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>, isHero: boolean) => {
@@ -107,6 +131,24 @@ export default function AdminProducts() {
     }
   };
 
+  const handleItemImageUpload = async (e: React.ChangeEvent<HTMLInputElement>, idx: number) => {
+    if (!e.target.files || e.target.files.length === 0) return;
+    const file = e.target.files[0];
+    setIsUploading(true);
+    try {
+      const url = await uploadFile(file);
+      const newItems = [...(formData.set_items || [])];
+      newItems[idx].image_url = url;
+      setFormData({ ...formData, set_items: newItems });
+      toast({ title: "Başarılı", description: "Parça görseli yüklendi." });
+    } catch (err) {
+      toast({ title: "Hata", description: "Görsel yüklenemedi.", variant: "destructive" });
+    } finally {
+      setIsUploading(false);
+      e.target.value = '';
+    }
+  };
+
   const removeImage = (index: number) => {
     const newImages = [...formData.images];
     newImages.splice(index, 1);
@@ -116,9 +158,9 @@ export default function AdminProducts() {
   if (loadingProducts) return <div>Yükleniyor...</div>;
 
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
+    <div className="flex flex-col gap-8">
       {/* Form Alanı */}
-      <div className="bg-white p-6 rounded-lg shadow-sm border lg:col-span-5 h-fit">
+      <div className="bg-white p-6 rounded-lg shadow-sm border w-full">
         <div className="flex justify-between items-center mb-6">
             <h2 className="text-xl font-semibold">
             {isEditing ? "Ürün Düzenle" : "Yeni Ürün Ekle"}
@@ -142,7 +184,7 @@ export default function AdminProducts() {
                   required
                 />
               </div>
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div>
                     <Label htmlFor="category">Kategori</Label>
                     <select
@@ -157,36 +199,202 @@ export default function AdminProducts() {
                     </select>
                 </div>
                 <div>
-                    <Label htmlFor="base_price">Çıplak Fiyat (₺)</Label>
+                    <Label htmlFor="delivery">Teslimat Bilgisi</Label>
                     <Input
-                        id="base_price"
+                        id="delivery"
+                        value={formData.delivery_info}
+                        onChange={(e) => setFormData({ ...formData, delivery_info: e.target.value })}
+                    />
+                </div>
+                <div>
+                    <Label htmlFor="delivery_time">Teslimat Süresi (Hafta)</Label>
+                    <Input
+                        id="delivery_time"
                         type="number"
-                        value={formData.base_price_without_fabric}
-                        onChange={(e) => setFormData({ ...formData, base_price_without_fabric: Number(e.target.value) })}
-                        required
+                        value={formData.delivery_time_weeks}
+                        onChange={(e) => setFormData({ ...formData, delivery_time_weeks: Number(e.target.value) })}
+                    />
+                </div>
+                <div>
+                    <Label htmlFor="installment">Taksit Seçenekleri</Label>
+                    <Input
+                        id="installment"
+                        value={formData.installment_info}
+                        onChange={(e) => setFormData({ ...formData, installment_info: e.target.value })}
                     />
                 </div>
               </div>
-              <div>
-                <Label htmlFor="sqm">Kumaş İhtiyacı (m²)</Label>
-                <Input
-                    id="sqm"
-                    type="number"
-                    step="0.1"
-                    value={formData.fabric_sqm_required}
-                    onChange={(e) => setFormData({ ...formData, fabric_sqm_required: Number(e.target.value) })}
-                    required
-                />
+          </div>
+
+          <hr className="border-gray-100" />
+
+
+
+          {/* Takım İçeriği */}
+          <div className="space-y-4">
+              <div className="flex justify-between items-center">
+                  <div>
+                      <h3 className="text-lg font-semibold text-gray-800">Takım İçeriği (Parçalar)</h3>
+                      <p className="text-xs text-gray-500">Ürünün tüm fiyat, kumaş ve özellikleri buradan parça parça tanımlanır.</p>
+                  </div>
+                  <Button type="button" variant="default" size="sm" onClick={() => {
+                      setFormData({
+                          ...formData,
+                          set_items: [...(formData.set_items || []), { id: Date.now().toString(), name: "", description: "", base_price: 0, fabric_sqm: 0, leg_color: "", default_quantity: 1, dimensions: { width: "", depth: "", height: "" } }]
+                      });
+                  }}>
+                      + Yeni Parça Ekle
+                  </Button>
               </div>
+
+              {(formData.set_items || []).length > 0 && (
+                  <div className="space-y-4">
+                      {(formData.set_items || []).map((item, idx) => (
+                          <div key={item.id} className="bg-gray-50 p-4 rounded-lg border border-gray-200 relative">
+                              <button type="button" onClick={() => {
+                                  const newItems = [...formData.set_items];
+                                  newItems.splice(idx, 1);
+                                  setFormData({ ...formData, set_items: newItems });
+                              }} className="absolute top-2 right-2 text-red-500 hover:text-red-700 bg-red-50 p-1 rounded">
+                                  <Trash2 size={16} />
+                              </button>
+                              
+                              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                                  <div>
+                                      <Label className="text-xs font-semibold">Parça Adı</Label>
+                                      <Input className="h-9 bg-white" value={item.name} onChange={(e) => {
+                                          const newItems = [...formData.set_items];
+                                          newItems[idx].name = e.target.value;
+                                          setFormData({ ...formData, set_items: newItems });
+                                      }} placeholder="Örn: 3'lü Koltuk" required />
+                                  </div>
+                                  <div>
+                                      <Label className="text-xs font-semibold">Ayak Seçenekleri (Virgülle ayırın, örn: Ahşap Siyah, Metal Altın)</Label>
+                                      <Input className="h-9 bg-white" value={item.leg_color || ''} onChange={(e) => {
+                                          const newItems = [...formData.set_items];
+                                          newItems[idx].leg_color = e.target.value;
+                                          setFormData({ ...formData, set_items: newItems });
+                                      }} placeholder="Boş bırakılırsa 'Standart Ayaklar' görünür." />
+                                  </div>
+                              </div>
+                              
+                              <div className="mb-4">
+                                  <Label className="text-xs font-semibold block mb-2">Parça Görseli</Label>
+                                  <div className="flex items-center gap-4">
+                                      {item.image_url ? (
+                                          <div className="relative w-16 h-16 border rounded bg-white flex items-center justify-center overflow-hidden shrink-0">
+                                              <img src={item.image_url} alt="" className="w-full h-full object-cover" />
+                                              <button type="button" onClick={() => {
+                                                  const newItems = [...formData.set_items];
+                                                  newItems[idx].image_url = undefined;
+                                                  setFormData({ ...formData, set_items: newItems });
+                                              }} className="absolute top-0 right-0 bg-red-500 text-white p-0.5 rounded-bl">
+                                                  <X size={12} />
+                                              </button>
+                                          </div>
+                                      ) : null}
+                                      <div className="flex-1">
+                                          <Input type="file" accept="image/*" onChange={(e) => handleItemImageUpload(e, idx)} className="h-9 bg-white cursor-pointer" />
+                                      </div>
+                                  </div>
+                              </div>
+                              
+                              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4 bg-white p-3 border rounded">
+                                  <div className="md:col-span-3"><Label className="text-xs font-semibold text-gray-500">Boyut Bilgileri</Label></div>
+                                  <div>
+                                      <Label className="text-xs">Genişlik</Label>
+                                      <Input className="h-8 text-xs" value={item.dimensions?.width || ''} onChange={(e) => {
+                                          const newItems = [...formData.set_items];
+                                          newItems[idx].dimensions = { ...(newItems[idx].dimensions || {width: '', depth: '', height: ''}), width: e.target.value };
+                                          setFormData({ ...formData, set_items: newItems });
+                                      }} placeholder="Örn: 250 cm" />
+                                  </div>
+                                  <div>
+                                      <Label className="text-xs">Derinlik</Label>
+                                      <Input className="h-8 text-xs" value={item.dimensions?.depth || ''} onChange={(e) => {
+                                          const newItems = [...formData.set_items];
+                                          newItems[idx].dimensions = { ...(newItems[idx].dimensions || {width: '', depth: '', height: ''}), depth: e.target.value };
+                                          setFormData({ ...formData, set_items: newItems });
+                                      }} placeholder="Örn: 108 cm" />
+                                  </div>
+                                  <div>
+                                      <Label className="text-xs">Yükseklik</Label>
+                                      <Input className="h-8 text-xs" value={item.dimensions?.height || ''} onChange={(e) => {
+                                          const newItems = [...formData.set_items];
+                                          newItems[idx].dimensions = { ...(newItems[idx].dimensions || {width: '', depth: '', height: ''}), height: e.target.value };
+                                          setFormData({ ...formData, set_items: newItems });
+                                      }} placeholder="Örn: 75 cm" />
+                                  </div>
+                              </div>
+                              
+                              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+                                  <div>
+                                      <Label className="text-xs font-semibold">Fiyat (TL)</Label>
+                                      <Input type="text" className="h-9 bg-white" value={item.base_price ? item.base_price.toLocaleString('tr-TR') : ''} onChange={(e) => {
+                                          const val = e.target.value.replace(/\./g, '');
+                                          if (!isNaN(Number(val))) {
+                                              const newItems = [...formData.set_items];
+                                              newItems[idx].base_price = Number(val);
+                                              setFormData({ ...formData, set_items: newItems });
+                                          }
+                                      }} placeholder="Örn: 10.000" required />
+                                  </div>
+                                  <div>
+                                      <Label className="text-xs font-semibold">Kumaş (m²)</Label>
+                                      <Input type="number" step="0.1" className="h-9 bg-white" value={item.fabric_sqm} onChange={(e) => {
+                                          const newItems = [...formData.set_items];
+                                          newItems[idx].fabric_sqm = Number(e.target.value);
+                                          setFormData({ ...formData, set_items: newItems });
+                                      }} required />
+                                  </div>
+                                  <div>
+                                      <Label className="text-xs font-semibold">Varsayılan Adet</Label>
+                                      <Input type="number" className="h-9 bg-white" value={item.default_quantity} onChange={(e) => {
+                                          const newItems = [...formData.set_items];
+                                          newItems[idx].default_quantity = Number(e.target.value);
+                                          setFormData({ ...formData, set_items: newItems });
+                                      }} required />
+                                  </div>
+                              </div>
+                              
+                              <div>
+                                  <Label className="text-xs font-semibold">Parça Açıklaması</Label>
+                                  <textarea
+                                    className="flex min-h-[60px] w-full rounded-md border border-input bg-white px-3 py-2 text-sm shadow-sm focus-visible:outline-none"
+                                    value={item.description}
+                                    onChange={(e) => {
+                                        const newItems = [...formData.set_items];
+                                        newItems[idx].description = e.target.value;
+                                        setFormData({ ...formData, set_items: newItems });
+                                    }}
+                                    placeholder="Bu parçaya özel ölçü veya özellikleri yazın..."
+                                  />
+                              </div>
+                          </div>
+                      ))}
+                  </div>
+              )}
+          </div>
+
+          <hr className="border-gray-100" />
+
+          {/* Genel Ürün Özellikleri */}
+          <div className="space-y-4">
               <div>
-                <Label htmlFor="description">Ürün Açıklaması</Label>
-                <textarea
-                  id="description"
-                  className="flex min-h-[80px] w-full rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
-                  value={formData.description}
-                  onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                  placeholder="Ürünün özelliklerini buraya yazın..."
-                />
+                  <h3 className="text-lg font-semibold text-gray-800">Genel Ürün Özellikleri</h3>
+                  <p className="text-xs text-gray-500">Müşteri sayfasında 'Ürün Özellikleri' menüsü altında gösterilir.</p>
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div><Label>Kumaş Bilgileri</Label><Input value={formData.features?.fabric_info || ''} onChange={e => setFormData({...formData, features: {...formData.features, fabric_info: e.target.value}})} placeholder="Örn: Polyester Bohem Kumaş" /></div>
+                  <div><Label>Fonksiyon</Label><Input value={formData.features?.function || ''} onChange={e => setFormData({...formData, features: {...formData.features, function: e.target.value}})} placeholder="Örn: Sırt Mekanizmalı" /></div>
+                  <div><Label>İskelet Malzemesi</Label><Input value={formData.features?.skeleton || ''} onChange={e => setFormData({...formData, features: {...formData.features, skeleton: e.target.value}})} placeholder="Örn: Kontra MDF Metal Parça Sunta" /></div>
+                  <div><Label>Oturum İç Malzemesi</Label><Input value={formData.features?.seating_inner || ''} onChange={e => setFormData({...formData, features: {...formData.features, seating_inner: e.target.value}})} placeholder="Örn: Sünger" /></div>
+                  <div><Label>Oturum Yumuşaklığı</Label><Input value={formData.features?.seating_softness || ''} onChange={e => setFormData({...formData, features: {...formData.features, seating_softness: e.target.value}})} placeholder="Örn: Orta Sert" /></div>
+                  <div><Label>Ayak Malzemesi</Label><Input value={formData.features?.leg_material || ''} onChange={e => setFormData({...formData, features: {...formData.features, leg_material: e.target.value}})} placeholder="Örn: Ahşap" /></div>
+                  <div><Label>Ayak Rengi</Label><Input value={formData.features?.leg_color || ''} onChange={e => setFormData({...formData, features: {...formData.features, leg_color: e.target.value}})} placeholder="Örn: Ceviz" /></div>
+                  <div><Label>Demonte Parçalar</Label><Input value={formData.features?.assembly_parts || ''} onChange={e => setFormData({...formData, features: {...formData.features, assembly_parts: e.target.value}})} placeholder="Örn: Ayaklar demonte gönderilir." /></div>
+                  <div><Label>Kumaş Malzemesi</Label><Input value={formData.features?.fabric_material || ''} onChange={e => setFormData({...formData, features: {...formData.features, fabric_material: e.target.value}})} placeholder="Örn: Polyester" /></div>
+                  <div className="md:col-span-2"><Label>Ek Bilgiler</Label><Input value={formData.features?.extra_info || ''} onChange={e => setFormData({...formData, features: {...formData.features, extra_info: e.target.value}})} placeholder="Örn: Üçlü koltuk ile birlikte..." /></div>
               </div>
           </div>
 
@@ -303,13 +511,39 @@ export default function AdminProducts() {
               )}
           </div>
 
-          <div className="flex items-center space-x-2 pt-2">
-            <Switch
-              id="published"
-              checked={formData.is_published}
-              onCheckedChange={(checked) => setFormData({ ...formData, is_published: checked })}
-            />
-            <Label htmlFor="published">Yayında (Sitede Göster)</Label>
+          <div className="flex items-center space-x-4 pt-2">
+            <div className="flex items-center space-x-2">
+              <Switch
+                id="published"
+                checked={formData.is_published}
+                onCheckedChange={(checked) => setFormData({ ...formData, is_published: checked })}
+              />
+              <Label htmlFor="published">Yayında (Sitede Göster)</Label>
+            </div>
+            <div className="flex items-center space-x-2">
+              <Switch
+                id="featured"
+                checked={formData.is_featured}
+                onCheckedChange={(checked) => setFormData({ ...formData, is_featured: checked })}
+              />
+              <Label htmlFor="featured">Öne Çıkan Ürün</Label>
+            </div>
+            <div className="flex items-center space-x-2">
+              <Switch
+                id="free_shipping"
+                checked={formData.is_free_shipping}
+                onCheckedChange={(checked) => setFormData({ ...formData, is_free_shipping: checked })}
+              />
+              <Label htmlFor="free_shipping">Ücretsiz Teslimat Logosu</Label>
+            </div>
+            <div className="flex items-center space-x-2">
+              <Switch
+                id="free_installation"
+                checked={formData.is_free_installation}
+                onCheckedChange={(checked) => setFormData({ ...formData, is_free_installation: checked })}
+              />
+              <Label htmlFor="free_installation">Ücretsiz Kurulum Logosu</Label>
+            </div>
           </div>
 
           <Button type="submit" className="w-full" disabled={saveMutation.isPending || isUploading}>
@@ -319,7 +553,7 @@ export default function AdminProducts() {
       </div>
 
       {/* Liste Alanı */}
-      <div className="bg-white p-6 rounded-lg shadow-sm border lg:col-span-7 overflow-x-auto h-fit max-h-[85vh] overflow-y-auto">
+      <div className="bg-white p-6 rounded-lg shadow-sm border w-full overflow-x-auto h-fit overflow-y-auto">
         <h2 className="text-xl font-semibold mb-4">Ürün Arşivi</h2>
         <table className="w-full text-sm text-left">
           <thead className="text-xs text-gray-700 uppercase bg-gray-50 border-b sticky top-0">
@@ -330,6 +564,7 @@ export default function AdminProducts() {
               <th className="px-4 py-3">Fiyat</th>
               <th className="px-4 py-3">Tedarikçi</th>
               <th className="px-4 py-3">Durum</th>
+              <th className="px-4 py-3">Öne Çıkan</th>
               <th className="px-4 py-3 text-right">İşlemler</th>
             </tr>
           </thead>
@@ -347,7 +582,7 @@ export default function AdminProducts() {
                 </td>
                 <td className="px-4 py-3 font-medium">{product.title}</td>
                 <td className="px-4 py-3">{categories?.find((c: any) => c.id === product.category_id)?.name}</td>
-                <td className="px-4 py-3">{product.base_price_without_fabric} ₺</td>
+                <td className="px-4 py-3">{product.base_price_without_fabric.toLocaleString('tr-TR')} TL</td>
                 <td className="px-4 py-3">
                     {product.manufacturer_name ? (
                         <span className="text-xs text-blue-600 font-medium bg-blue-50 px-2 py-1 rounded">{product.manufacturer_name}</span>
@@ -357,6 +592,13 @@ export default function AdminProducts() {
                   <span className={`px-2 py-1 rounded-full text-xs ${product.is_published ? "bg-green-100 text-green-800" : "bg-gray-100 text-gray-800"}`}>
                     {product.is_published ? "Yayında" : "Gizli"}
                   </span>
+                </td>
+                <td className="px-4 py-3">
+                  {product.is_featured ? (
+                    <span className="px-2 py-1 rounded-full text-xs bg-amber-100 text-amber-800 font-medium">Öne Çıkan</span>
+                  ) : (
+                    <span className="text-gray-400 text-xs">-</span>
+                  )}
                 </td>
                 <td className="px-4 py-3 text-right">
                   <div className="flex justify-end gap-2">

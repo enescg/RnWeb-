@@ -52,9 +52,10 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
       <aside className="w-64 bg-white border-r shadow-sm flex flex-col">
         <div className="h-16 flex items-center px-6 border-b">
           <Link href="/">
-            <span className="text-xl font-serif font-bold text-primary cursor-pointer">
-              RN Consept Admin
-            </span>
+            <div className="flex items-center gap-2 cursor-pointer">
+              <img src="/images/rnyazi.svg" alt="RN Consept" className="h-6 w-auto object-contain" />
+              <span className="text-sm font-medium text-gray-500 mt-1">Admin</span>
+            </div>
           </Link>
         </div>
         <nav className="flex-1 p-4 space-y-1">

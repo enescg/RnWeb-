@@ -20,6 +20,16 @@ export default function Login() {
     setIsLoading(true);
 
     try {
+      if (email.toLowerCase() !== "admin@rnconsept.com") {
+        toast({
+          variant: "destructive",
+          title: "Yetkisiz Giriş",
+          description: "Sadece yönetici hesabı ile giriş yapabilirsiniz.",
+        });
+        setIsLoading(false);
+        return;
+      }
+
       await signInWithEmailAndPassword(auth, email, password);
       toast({
         title: "Giriş Başarılı",
@@ -43,7 +53,7 @@ export default function Login() {
       <Card className="w-full max-w-md shadow-lg border-t-4 border-t-primary">
         <CardHeader className="space-y-1 text-center">
           <div className="flex justify-center mb-4">
-            <span className="text-3xl font-serif font-bold text-primary">RN Consept</span>
+            <img src="/images/rnyazi.svg" alt="RN Consept" className="h-10 w-auto object-contain" />
           </div>
           <CardTitle className="text-2xl font-semibold tracking-tight">
             Admin Paneli

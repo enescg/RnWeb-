@@ -36,8 +36,8 @@ const Breadcrumb = ({ items }: BreadcrumbProps) => {
                 </div>
 
                 {/* Logo */}
-                <Link href="/" className="text-white">
-                    <span className="text-xl font-serif tracking-widest uppercase">RN Consept</span>
+                <Link href="/">
+                    <img src="/images/rnyazi.svg" alt="RN Consept" className="h-6 md:h-8 w-auto object-contain" />
                 </Link>
             </div>
         </div>
