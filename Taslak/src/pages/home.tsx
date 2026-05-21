@@ -38,38 +38,35 @@ const Hero = () => {
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 1, delay: 0.2 }}
         >
-          <h2 className="text-sm md:text-base uppercase tracking-[0.3em] mb-4 text-white/80">
-            Beylikdüzü, İstanbul
-          </h2>
-          <h1 className="text-4xl md:text-6xl lg:text-7xl font-serif mb-10 max-w-4xl leading-tight" style={{ fontFamily: "'Playfair Display', serif", fontStyle: 'italic', fontWeight: 400 }}>
+          <h1 className="text-4xl md:text-6xl lg:text-7xl font-serif mb-10 max-w-4xl leading-tight font-normal italic" style={{ fontFamily: "'Playfair Display', serif" }}>
             Zamanın Ötesinde Yaşam Alanınıza <br />
             <span className="text-white/90">Birlikte İmza Atıyoruz</span>
           </h1>
           <div className="flex flex-col sm:flex-row flex-wrap justify-center gap-4">
-            <a
-              href="#koleksiyonlar"
-              className="inline-flex items-center space-x-2 bg-white/10 hover:bg-primary border border-white/40 hover:border-primary text-white px-6 py-3.5 transition-all duration-300 font-medium uppercase tracking-wider text-xs group backdrop-blur-sm"
+            <Link
+              href="/categories/salon"
+              className="inline-flex items-center space-x-2 bg-white/10 hover:bg-primary border border-white/40 hover:border-primary text-white px-6 py-3.5 transition-all duration-300 font-medium uppercase tracking-wider text-xs group backdrop-blur-sm cursor-pointer"
               data-testid="link-indoor"
             >
-              <span>Indoor Koleksiyonu Keşfedin</span>
+              <span>SALON TAKIMLARINI KEŞFET</span>
               <ChevronRight size={14} className="group-hover:translate-x-1 transition-transform" />
-            </a>
-            <a
-              href="#koleksiyonlar"
-              className="inline-flex items-center space-x-2 bg-white/10 hover:bg-primary border border-white/40 hover:border-primary text-white px-6 py-3.5 transition-all duration-300 font-medium uppercase tracking-wider text-xs group backdrop-blur-sm"
+            </Link>
+            <Link
+              href="/categories/bahce"
+              className="inline-flex items-center space-x-2 bg-white/10 hover:bg-primary border border-white/40 hover:border-primary text-white px-6 py-3.5 transition-all duration-300 font-medium uppercase tracking-wider text-xs group backdrop-blur-sm cursor-pointer"
               data-testid="link-outdoor"
             >
-              <span>Outdoor Koleksiyonu Keşfedin</span>
+              <span>BAHÇE KOLEKSİYONUNU KEŞFET</span>
               <ChevronRight size={14} className="group-hover:translate-x-1 transition-transform" />
-            </a>
-            <a
-              href="#koleksiyonlar"
-              className="inline-flex items-center space-x-2 bg-white/10 hover:bg-primary border border-white/40 hover:border-primary text-white px-6 py-3.5 transition-all duration-300 font-medium uppercase tracking-wider text-xs group backdrop-blur-sm"
+            </Link>
+            <Link
+              href="/categories/mutfak"
+              className="inline-flex items-center space-x-2 bg-white/10 hover:bg-primary border border-white/40 hover:border-primary text-white px-6 py-3.5 transition-all duration-300 font-medium uppercase tracking-wider text-xs group backdrop-blur-sm cursor-pointer"
               data-testid="link-mutfak"
             >
-              <span>Mutfak Çözümlerini Keşfedin</span>
+              <span>MUTFAK ÇÖZÜMLERİNİ KEŞFET</span>
               <ChevronRight size={14} className="group-hover:translate-x-1 transition-transform" />
-            </a>
+            </Link>
           </div>
         </motion.div>
       </div>
@@ -364,7 +361,7 @@ const FeaturedPieces = () => {
           </motion.a>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+        <div className="grid grid-cols-2 md:grid-cols-3 luxury-grid">
           {pieces.length > 0 ? (
             pieces.map((piece, index) => (
               <motion.div
@@ -389,18 +386,18 @@ const FeaturedPieces = () => {
                 </div>
               </Link>
               <div className="px-1 mt-3">
-                <h3 className="text-3xl font-sans font-semibold text-gray-800 mb-2 group-hover:text-primary transition-colors">{piece.name}</h3>
+                <h3 className="text-lg md:text-xl font-sans font-semibold tracking-wide text-black mb-1.5 group-hover:text-primary transition-colors">{piece.name}</h3>
                 <div className="flex flex-col mb-3">
-                    <span className="text-rose-600 font-medium text-lg">
+                    <span className="text-foreground/50 text-xs md:text-sm line-through">
                         {piece.price}
                     </span>
-                    <span className="text-rose-800 font-bold text-xl">
+                    <span className="text-rose-700 font-bold text-base md:text-lg">
                         Sepette: {piece.discountedPrice}
                     </span>
                 </div>
                 {piece.isFreeShipping && (
-                  <div className="flex items-center gap-1.5 bg-gray-100 text-gray-600 text-xs px-2.5 py-1 rounded-md w-fit font-medium">
-                      <Truck size={14} />
+                  <div className="flex items-center gap-1.5 bg-gray-100 text-gray-600 text-[10px] md:text-xs px-2.5 py-0.5 rounded-sm w-fit font-medium">
+                      <Truck size={12} className="md:size-3.5" />
                       <span>Ücretsiz Teslimat</span>
                   </div>
                 )}
@@ -435,14 +432,14 @@ const Showroom = () => {
           <MapPin size={40} className="mx-auto mb-8 text-primary" strokeWidth={1} />
           <h2 className="text-4xl md:text-6xl font-serif mb-6">Sizi Bekliyoruz</h2>
           <p className="text-lg md:text-xl font-light text-secondary-foreground/70 mb-12">
-            Koleksiyonlarımızı yakından incelemek, kahvenizi yudumlarken hayalinizdeki mobilyayı tasarlamak için sizi Nişantaşı'ndaki showroom'umuza davet ediyoruz.
+            Koleksiyonlarımızı yakından incelemek, kahvenizi yudumlarken hayalinizdeki mobilyayı tasarlamak için sizi Beylikdüzü'ndeki showroom'umuza davet ediyoruz.
           </p>
           <div className="flex flex-col items-center space-y-6">
-            <p className="font-serif text-xl tracking-wide uppercase">Abdi İpekçi Caddesi No: 42<br />Nişantaşı, Şişli / İstanbul</p>
+            <p className="font-serif text-xl tracking-wide uppercase">Pınartepe, Akboğa Sokağı No: 4<br />34500 Büyükçekmece / İstanbul</p>
             <div className="w-16 h-[1px] bg-primary/50" />
-            <a href="tel:+902120000000" className="flex items-center space-x-3 text-primary hover:text-white transition-colors text-lg" data-testid="link-phone">
+            <a href="tel:+905324121856" className="flex items-center space-x-3 text-primary hover:text-white transition-colors text-lg" data-testid="link-phone">
               <Phone size={20} />
-              <span className="tracking-widest">+90 (212) 000 00 00</span>
+              <span className="tracking-widest">+90 532 412 18 56</span>
             </a>
           </div>
         </motion.div>

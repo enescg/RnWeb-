@@ -35,7 +35,7 @@ const AlternativeProducts = ({ currentProductId, categoryId }: { currentProductI
                     <span className="text-primary uppercase tracking-widest text-xs font-semibold block mb-3">Benzer Ürünler</span>
                     <h2 className="text-3xl md:text-4xl font-serif text-foreground">Alternatif Ürünler</h2>
                 </div>
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+                <div className="grid grid-cols-2 md:grid-cols-3 luxury-grid">
                     {pieces.map((piece: any, index: number) => (
                         <motion.div
                             key={piece.id}
@@ -61,19 +61,19 @@ const AlternativeProducts = ({ currentProductId, categoryId }: { currentProductI
                             </Link>
                             <div className="px-1 mt-3">
                                 <Link href={`/product/${piece.id}`}>
-                                    <a className="text-2xl font-sans font-semibold text-gray-800 mb-2 group-hover:text-primary transition-colors block">{piece.name}</a>
+                                    <a className="text-lg md:text-xl font-sans font-semibold tracking-wide text-black mb-1.5 group-hover:text-primary transition-colors block">{piece.name}</a>
                                 </Link>
                                 <div className="flex flex-col mb-3">
-                                    <span className="text-rose-600 font-medium text-base">
+                                    <span className="text-foreground/50 text-xs md:text-sm line-through">
                                         {piece.price}
                                     </span>
-                                    <span className="text-rose-800 font-bold text-lg">
+                                    <span className="text-rose-700 font-bold text-base md:text-lg">
                                         Sepette: {piece.discountedPrice}
                                     </span>
                                 </div>
                                 {piece.isFreeShipping && (
-                                    <div className="flex items-center gap-1.5 bg-gray-100 text-gray-600 text-xs px-2.5 py-1 rounded-md w-fit font-medium">
-                                        <Truck size={14} />
+                                    <div className="flex items-center gap-1.5 bg-gray-100 text-gray-600 text-[10px] md:text-xs px-2.5 py-0.5 rounded-sm w-fit font-medium">
+                                        <Truck size={12} className="md:size-3.5" />
                                         <span>Ücretsiz Teslimat</span>
                                     </div>
                                 )}
@@ -274,13 +274,19 @@ export default function ProductPage() {
                                 )}
                             </div>
                             {!isTeam && selectedFabric && (
-                                <div className="flex items-center gap-4 p-4 mt-4 bg-gray-50 border rounded-lg">
+                                <div className="flex items-center gap-4 p-4 mt-4 bg-white border border-primary/20 rounded-2xl shadow-sm ring-1 ring-primary/5">
                                     {selectedFabric.image_url && (
-                                        <img src={selectedFabric.image_url} alt="" className="w-16 h-16 rounded object-cover" />
+                                        <div className="w-24 h-24 rounded-xl overflow-hidden bg-gray-50 border border-gray-100 shadow-inner shrink-0 relative group">
+                                            <img src={selectedFabric.image_url} alt="" className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" />
+                                        </div>
                                     )}
-                                    <div className="text-sm text-gray-600">
-                                        <p className="font-medium text-black">{selectedFabric.name}</p>
-                                        <p>Fiyat Farkı: <span className="font-medium">{(selectedFabric.price_per_sqm * (product.fabric_sqm_required || 0)).toLocaleString('tr-TR')} $</span></p>
+                                    <div className="text-sm space-y-1">
+                                        <span className="inline-block text-[10px] font-bold uppercase tracking-wider bg-primary/10 text-primary px-2.5 py-0.5 rounded-full mb-1">Seçili Kumaş</span>
+                                        <p className="font-serif text-lg text-gray-900 leading-tight">{selectedFabric.name}</p>
+                                        <p className="text-gray-500 text-xs">Birim Fiyatı: {selectedFabric.price_per_sqm.toLocaleString('tr-TR')} $ / m²</p>
+                                        <p className="text-gray-900 font-medium text-xs mt-1">
+                                            Kumaş Farkı: <span className="text-sm font-semibold text-primary">{(selectedFabric.price_per_sqm * (product.fabric_sqm_required || 0)).toLocaleString('tr-TR')} $</span>
+                                        </p>
                                     </div>
                                 </div>
                             )}
@@ -333,12 +339,21 @@ export default function ProductPage() {
                                                     <div className="text-xs text-gray-500 pt-2 border-t border-gray-200 mt-2">
                                                         <div className="flex flex-col gap-3">
                                                             <div className="flex flex-wrap items-center justify-between gap-2">
-                                                                <div className="flex items-center gap-2">
+                                                                <div className="flex flex-col sm:flex-row sm:items-center gap-2">
                                                                     <span className="font-medium text-gray-700">Seçili Kumaş:</span>
                                                                     {selectedFabrics[item.id] ? (
-                                                                        <span className="font-medium text-primary">
-                                                                            {fabrics?.find((f: any) => f.id === selectedFabrics[item.id])?.name || "Bilinmiyor"}
-                                                                        </span>
+                                                                        <div className="flex items-center gap-2 bg-white px-2.5 py-1.5 border rounded-lg shadow-sm w-fit">
+                                                                            {fabrics?.find((f: any) => f.id === selectedFabrics[item.id])?.image_url && (
+                                                                                <img 
+                                                                                    src={fabrics.find((f: any) => f.id === selectedFabrics[item.id]).image_url} 
+                                                                                    alt="" 
+                                                                                    className="w-8 h-8 rounded object-cover border border-gray-100 shadow-inner" 
+                                                                                />
+                                                                            )}
+                                                                            <span className="font-semibold text-primary">
+                                                                                {fabrics?.find((f: any) => f.id === selectedFabrics[item.id])?.name || "Bilinmiyor"}
+                                                                            </span>
+                                                                        </div>
                                                                     ) : (
                                                                         <span className="text-gray-400 italic">Standart Kumaş</span>
                                                                     )}

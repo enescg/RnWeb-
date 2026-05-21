@@ -251,3 +251,20 @@
     pointer-events: none;
   }
 }
+
+.luxury-grid {
+  display: grid !important;
+  gap: 24px !important;
+}
+
+@media (min-width: 768px) {
+  .luxury-grid {
+    gap: 32px !important;
+  }
+}
+
+@media (min-width: 1024px) {
+  .luxury-grid {
+    gap: 40px !important;
+  }
+}

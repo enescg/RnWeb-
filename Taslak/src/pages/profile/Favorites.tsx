@@ -26,24 +26,31 @@ export default function FavoritesPage() {
                     </Link>
                 </div>
             ) : (
-                <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-4">
+                <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 luxury-grid">
                     {favoriteProducts.map((product: any) => (
-                        <div key={product.id} className="bg-white group relative">
-                            <Link href={`/product/${product.id}`} className="block relative aspect-[4/5] overflow-hidden mb-3">
+                        <div key={product.id} className="group relative">
+                            <Link href={`/product/${product.id}`} className="block relative aspect-[4/5] overflow-hidden mb-5 bg-card">
                                 <img src={product.images?.[0] || "/images/living-room.png"} alt={product.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700" />
-                                <div className="absolute top-2 right-2 z-10">
+                                <div className="absolute top-4 right-4 z-10">
                                     <button 
                                         onClick={(e) => { e.preventDefault(); e.stopPropagation(); toggleFavorite(product.id); }}
-                                        className="w-8 h-8 bg-white/90 backdrop-blur-sm flex items-center justify-center text-red-500 hover:bg-red-50 transition-colors shadow-sm"
+                                        className="w-10 h-10 bg-white/90 backdrop-blur-sm flex items-center justify-center text-red-500 hover:bg-red-50 transition-colors shadow-sm"
                                     >
-                                        <Heart size={14} className="fill-current" />
+                                        <Heart size={16} className="fill-current" />
                                     </button>
                                 </div>
                             </Link>
-                            <div className="px-1">
+                            <div className="px-1 mt-3">
                                 <Link href={`/product/${product.id}`} className="block group-hover:text-primary transition-colors">
-                                    <h3 className="font-medium text-xs sm:text-sm text-gray-800 mb-1 truncate">{product.title}</h3>
-                                    <p className="text-xs sm:text-sm font-bold text-gray-900">{product.base_price_without_fabric.toLocaleString('tr-TR')} TL</p>
+                                    <h3 className="text-lg md:text-xl font-sans font-semibold tracking-wide text-black mb-1.5 truncate">{product.title}</h3>
+                                    <div className="flex flex-col mb-3">
+                                        <span className="text-foreground/50 text-xs md:text-sm line-through">
+                                            {(product.base_price_without_fabric * 1.1).toLocaleString('tr-TR', { maximumFractionDigits: 0 }) + " TL"}
+                                        </span>
+                                        <span className="text-rose-700 font-bold text-base md:text-lg">
+                                            Sepette: {product.base_price_without_fabric.toLocaleString('tr-TR') + " TL"}
+                                        </span>
+                                    </div>
                                 </Link>
                             </div>
                         </div>

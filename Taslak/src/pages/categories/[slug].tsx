@@ -54,18 +54,18 @@ const ProductCard = ({ product, index }: { product: any; index: number }) => {
                 </div>
             </div>
             <div className="px-1 mt-3">
-                <h3 className="text-3xl font-sans font-semibold text-gray-800 mb-2 group-hover:text-primary transition-colors">{product.name}</h3>
+                <h3 className="text-lg md:text-xl font-sans font-semibold tracking-wide text-black mb-1.5 group-hover:text-primary transition-colors">{product.name}</h3>
                 <div className="flex flex-col mb-3">
-                    <span className="text-rose-600 font-medium text-lg">
+                    <span className="text-foreground/50 text-xs md:text-sm line-through">
                         {product.price}
                     </span>
-                    <span className="text-rose-800 font-bold text-xl">
+                    <span className="text-rose-700 font-bold text-base md:text-lg">
                         Sepette: {product.discountedPrice}
                     </span>
                 </div>
                 {product.isFreeShipping && (
-                    <div className="flex items-center gap-1.5 bg-gray-100 text-gray-600 text-xs px-2.5 py-1 rounded-md w-fit font-medium">
-                        <Truck size={14} />
+                    <div className="flex items-center gap-1.5 bg-gray-100 text-gray-600 text-[10px] md:text-xs px-2.5 py-0.5 rounded-sm w-fit font-medium">
+                        <Truck size={12} className="md:size-3.5" />
                         <span>Ücretsiz Teslimat</span>
                     </div>
                 )}
@@ -146,7 +146,7 @@ export default function CategoryPage() {
             <FilterBar productCount={products.length} />
 
             <div className="container mx-auto px-6 py-16">
-                <div className={`grid gap-8 ${products.length >= 10 ? 'grid-cols-1 md:grid-cols-2 lg:grid-cols-5' : products.length > 3 ? 'grid-cols-1 md:grid-cols-2 lg:grid-cols-4' : 'grid-cols-1 md:grid-cols-2 lg:grid-cols-3'}`}>
+                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 luxury-grid">
                     {products.map((product: any, index: number) => (
                         <ProductCard key={product.id} product={{
                             id: product.id,
