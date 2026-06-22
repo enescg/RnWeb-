@@ -58,9 +58,13 @@ RnWeb/
 
 ## 4. Backend & Veri Yapısı (Firebase)
 * Tamamen Serverless bir yapı kurulmuştur (`api.ts`).
-* Adresler (`addresses` koleksiyonu), Siparişler (`orders` koleksiyonu) ve Favoriler veritabanına bağlanmıştır.
+* Adresler (`addresses` koleksiyonu), Siparişler (`orders` koleksiyonu), Sepetler (`carts` koleksiyonu) ve Favoriler veritabanına bağlanmıştır.
+* **Güvenlik Kuralları (Security Rules):** Firestore (`firestore.rules`) ve Storage (`storage.rules`) güvenlik kuralları projeye entegre edilmiştir:
+  * Ürünler, Kategoriler ve Kumaşlar genel erişime açık (Read) olup sadece admin (`admin@rnconsept.com`) tarafından yazılabilir.
+  * Siparişler, Adresler, Sepetler ve Favoriler ise ilgili kullanıcının kendi UID'sine göre yetkilendirilmiştir; her kullanıcı yalnızca kendi verisine erişebilir.
 
 ## 5. Çözülen Önemli Sorunlar
+* **Veritabanı Erişim İzinleri Hatası (Permission Denied):** Firebase test modu süresinin (30 gün) dolması nedeniyle kapanan veritabanı erişimi, hazırlanan güvenlik kuralları ile kalıcı ve güvenli olarak tekrar aktif edilmiştir.
 * **Sepet UI UX Problemleri:** Ürünlerin sepette kocaman resimlerle dağınık görünmesi engellendi, tek bir çizgi üzerinde şık listeler haline getirildi.
 * **Müşteri - Admin Ayrımı:** Firebase ile müşteri bilgileri güvenli bir profilde (`addresses`) tutularak yönetimi sağlandı, yetkilendirmeler oluşturuldu.
 * **Kalıcı Context Yönetimi:** Sepet ve favori sistemleri global contextlere bağlanıp proje genelinde erişilebilir kılındı.
