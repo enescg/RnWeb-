@@ -1,0 +1,46 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Helper function to check if user is admin
+    function isAdmin() {
+      return request.auth != null && request.auth.token.email == 'admin@rnconsept.com';
+    }
+
+    // Helper function to check if user is authenticated
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    // Products, Categories, Fabrics: Anyone can read, only admin can write
+    match /products/{document} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+    match /categories/{document} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+    match /fabrics/{document} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    // Orders, Addresses: Users can read/write their own, admin can do everything
+    match /orders/{document} {
+      allow read, update, delete: if isAdmin() || (isAuthenticated() && resource.data.userId == request.auth.uid);
+      allow create: if isAuthenticated() && request.resource.data.userId == request.auth.uid;
+    }
+    match /addresses/{document} {
+      allow read, update, delete: if isAdmin() || (isAuthenticated() && resource.data.userId == request.auth.uid);
+      allow create: if isAuthenticated() && request.resource.data.userId == request.auth.uid;
+    }
+
+    // Carts, Favorites: Users can read/write their own document (doc ID is uid)
+    match /carts/{userId} {
+      allow read, write: if isAdmin() || (isAuthenticated() && userId == request.auth.uid);
+    }
+    match /favorites/{userId} {
+      allow read, write: if isAdmin() || (isAuthenticated() && userId == request.auth.uid);
+    }
+  }
+}
