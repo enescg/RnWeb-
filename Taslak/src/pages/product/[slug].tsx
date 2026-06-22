@@ -90,21 +90,59 @@ const AlternativeProducts = ({ currentProductId, categoryId }: { currentProductI
 const ImageGallery = ({ images }: { images: string[] }) => {
     const [activeIndex, setActiveIndex] = useState(0);
 
+    // Reset active index if list of images changes (e.g. fabric change prepends a new image)
+    useEffect(() => {
+        setActiveIndex(0);
+    }, [images]);
+
     if (!images || images.length === 0) {
-        return <div className="aspect-[4/5] bg-gray-100 flex items-center justify-center">Görsel Yok</div>;
+        return <div className="w-full h-full bg-gray-100 flex items-center justify-center">Görsel Yok</div>;
     }
 
     return (
-        <div className="space-y-4">
-            <div className="relative aspect-[4/5] overflow-hidden bg-card">
+        <div className="relative w-full h-full flex flex-col justify-between">
+            {/* Main Image Container */}
+            <div className="relative flex-1 w-full min-h-0 overflow-hidden bg-card">
                 <AnimatePresence mode="wait">
-                    <motion.img key={activeIndex} src={images[activeIndex]} alt="Ürün" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.3 }} className="w-full h-full object-cover" />
+                    <motion.img
+                        key={activeIndex}
+                        src={images[activeIndex]}
+                        alt="Ürün"
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                        transition={{ duration: 0.2 }}
+                        className="w-full h-full object-cover lg:object-cover"
+                    />
                 </AnimatePresence>
+                
+                {/* Mobile Pagination Dots */}
+                {images.length > 1 && (
+                    <div className="absolute bottom-3 left-0 right-0 flex justify-center gap-1.5 lg:hidden z-10">
+                        {images.map((_, idx) => (
+                            <button
+                                key={idx}
+                                onClick={() => setActiveIndex(idx)}
+                                className={`w-2.5 h-2.5 rounded-full transition-all ${
+                                    activeIndex === idx ? "bg-primary w-5" : "bg-black/35"
+                                }`}
+                            />
+                        ))}
+                    </div>
+                )}
             </div>
+            
+            {/* Desktop Thumbnails */}
             {images.length > 1 && (
-                <div className="flex gap-3">
+                <div className="hidden lg:flex gap-3 mt-4 overflow-x-auto py-1">
                     {images.map((img, index) => (
-                        <button key={index} onClick={() => setActiveIndex(index)} className={`w-20 h-20 flex-shrink-0 overflow-hidden border-2 transition-colors ${activeIndex === index ? 'border-primary' : 'border-transparent'}`}>
+                        <button
+                            key={index}
+                            onClick={() => setActiveIndex(index)}
+                            className={`w-20 h-20 flex-shrink-0 overflow-hidden border-2 transition-all rounded-md ${
+                                activeIndex === index ? 'border-primary scale-95 shadow-sm' : 'border-gray-200 hover:border-gray-400'
+                            }`}
+                        >
                             <img src={img} alt="" className="w-full h-full object-cover" />
                         </button>
                     ))}
@@ -188,6 +226,31 @@ export default function ProductPage() {
     let finalPrice = 0;
     const selectedFabric = fabrics?.find((f: any) => f.id === selectedFabricId);
 
+    const groupedFabrics = useMemo(() => {
+        const activeFabrics = fabrics?.filter((f) => f.is_active !== false) || [];
+        const groups: Record<string, Fabric[]> = {};
+        const standalone: Fabric[] = [];
+
+        activeFabrics.forEach((fabric) => {
+            const gName = fabric.group_name?.trim();
+            if (gName) {
+                if (!groups[gName]) {
+                    groups[gName] = [];
+                }
+                groups[gName].push(fabric);
+            } else {
+                standalone.push(fabric);
+            }
+        });
+
+        return { groups, standalone };
+    }, [fabrics]);
+
+    const galleryImages = [
+        ...(selectedFabric?.image_url ? [selectedFabric.image_url] : []),
+        ...(product.images || [])
+    ];
+
     if (isTeam) {
         finalPrice = product.set_items.reduce((total: number, item: any) => {
             const qty = setQuantities[item.id] || 0;
@@ -244,11 +307,16 @@ export default function ProductPage() {
         <main className="min-h-screen font-sans pb-24 md:pb-28">
             <Navbar variant="product" breadcrumbs={breadcrumbs} />
 
-            <div className="container mx-auto px-6 py-12 md:py-20">
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 lg:gap-16">
-                    <ImageGallery images={product.images || []} />
+            <div className="lg:container lg:mx-auto lg:px-6 lg:py-20">
+                <div className="flex flex-col lg:grid lg:grid-cols-2 gap-0 lg:gap-16 items-start h-[calc(100vh-4rem)] lg:h-auto overflow-hidden lg:overflow-visible">
+                    
+                    {/* Image Column */}
+                    <div className="w-full h-[38vh] min-h-[250px] lg:h-auto shrink-0 lg:sticky lg:top-24 bg-card border-b lg:border-b-0 border-gray-100 p-2 lg:p-0">
+                        <ImageGallery images={galleryImages} />
+                    </div>
 
-                    <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }} className="space-y-8">
+                    {/* Options Column */}
+                    <div className="flex-1 overflow-y-auto lg:overflow-visible p-6 lg:p-0 space-y-8 pb-32 lg:pb-0">
                         <div>
                             <span className="inline-block px-3 py-1 text-xs uppercase tracking-widest bg-primary text-white mb-4">
                                 {category?.name}
@@ -284,72 +352,102 @@ export default function ProductPage() {
                             </div>
                         </div>
 
-                        {/* Kumaş Seçenekleri Video */}
-                        <div className="border-t border-border pt-6">
-                            <h4 className="text-base font-bold uppercase tracking-widest text-foreground/80 mb-4">KUMAŞ VE ÖZELLEŞTİR</h4>
-                            <div 
-                                className={`rounded-lg overflow-hidden border bg-gray-50 relative ${isTeam ? 'cursor-pointer hover:opacity-90 transition-opacity' : ''}`}
-                                onClick={() => {
-                                    if (isTeam) {
-                                        setIsTeamMenuOpen(true);
-                                        setTimeout(() => {
-                                            document.getElementById('team-menu-section')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-                                        }, 100);
-                                    }
-                                }}
-                            >
-                                <video 
-                                    src="/videos/kumaslar.mp4" 
-                                    autoPlay 
-                                    loop 
-                                    muted 
-                                    playsInline 
-                                    className="w-full h-auto pointer-events-none"
-                                />
-                                {!isTeam && (
-                                    <div className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 hover:opacity-100 transition-opacity cursor-pointer" onClick={(e) => { e.stopPropagation(); setActiveFabricItemId(null); setIsFabricPanelOpen(true); }}>
-                                        <button className="bg-white text-black px-6 py-2 rounded font-medium">Kumaş Seç</button>
-                                    </div>
-                                )}
-                            </div>
-                            {!isTeam && selectedFabric && (
-                                <div className="flex items-center gap-4 p-4 mt-4 bg-white border border-primary/20 rounded-2xl shadow-sm ring-1 ring-primary/5">
-                                    {selectedFabric.image_url && (
-                                        <div className="w-24 h-24 rounded-xl overflow-hidden bg-gray-50 border border-gray-100 shadow-inner shrink-0 relative group">
-                                            <img src={selectedFabric.image_url} alt="" className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" />
+                        {/* Kumaş Seçenekleri (Sadece Tekil Ürün ise) */}
+                        {!isTeam && (
+                            <div className="border-t border-border pt-6 space-y-6">
+                                <h4 className="text-sm font-bold uppercase tracking-widest text-foreground/80 mb-2">KUMAŞ SEÇİMİ</h4>
+                                
+                                <div className="space-y-6">
+                                    {/* Gruplanmış Kumaşlar */}
+                                    {Object.entries(groupedFabrics.groups).map(([groupName, variants]) => {
+                                        const isAnySelected = variants.some((v) => v.id === selectedFabricId);
+                                        const selectedVariant = variants.find((v) => v.id === selectedFabricId);
+                                        
+                                        return (
+                                            <div key={groupName} className="space-y-2">
+                                                <div className="flex justify-between items-center">
+                                                    <span className="text-sm font-medium text-gray-800">{groupName}</span>
+                                                    {isAnySelected && selectedVariant && (
+                                                        <span className="text-xs text-primary font-semibold">
+                                                            {selectedVariant.name} (+{(selectedVariant.price_per_sqm * (product.fabric_sqm_required || 0)).toLocaleString('tr-TR')} $)
+                                                        </span>
+                                                    )}
+                                                </div>
+                                                <div className="flex flex-wrap gap-2">
+                                                    {variants.map((variant) => {
+                                                        const isSelected = selectedFabricId === variant.id;
+                                                        return (
+                                                            <button
+                                                                key={variant.id}
+                                                                type="button"
+                                                                onClick={() => setSelectedFabricId(variant.id)}
+                                                                className={`relative w-9 h-9 rounded-full overflow-hidden border transition-all ${
+                                                                    isSelected
+                                                                        ? "ring-2 ring-primary border-transparent ring-offset-1 scale-105"
+                                                                        : "border-gray-200 hover:border-gray-400"
+                                                                }`}
+                                                                title={variant.name}
+                                                            >
+                                                                {variant.image_url ? (
+                                                                    <img src={variant.image_url} alt={variant.name} className="w-full h-full object-cover" />
+                                                                ) : (
+                                                                    <div className="w-full h-full bg-gray-200 flex items-center justify-center text-[10px] text-gray-500">?</div>
+                                                                )}
+                                                            </button>
+                                                        );
+                                                    })}
+                                                </div>
+                                            </div>
+                                        );
+                                    })}
+                                    
+                                    {/* Bağımsız Kumaşlar */}
+                                    {groupedFabrics.standalone.length > 0 && (
+                                        <div className="space-y-2">
+                                            <span className="text-sm font-medium text-gray-800">Diğer Kumaşlar</span>
+                                            <div className="flex flex-wrap gap-2">
+                                                {groupedFabrics.standalone.map((fabric) => {
+                                                    const isSelected = selectedFabricId === fabric.id;
+                                                    return (
+                                                        <button
+                                                            key={fabric.id}
+                                                            type="button"
+                                                            onClick={() => setSelectedFabricId(fabric.id)}
+                                                            className={`relative w-9 h-9 rounded-full overflow-hidden border transition-all ${
+                                                                isSelected
+                                                                    ? "ring-2 ring-primary border-transparent ring-offset-1 scale-105"
+                                                                    : "border-gray-200 hover:border-gray-400"
+                                                            }`}
+                                                            title={fabric.name}
+                                                        >
+                                                            {fabric.image_url ? (
+                                                                <img src={fabric.image_url} alt={fabric.name} className="w-full h-full object-cover" />
+                                                            ) : (
+                                                                <div className="w-full h-full bg-gray-200 flex items-center justify-center text-[10px] text-gray-500">?</div>
+                                                            )}
+                                                        </button>
+                                                    );
+                                                })}
+                                            </div>
                                         </div>
                                     )}
-                                    <div className="text-sm space-y-1">
-                                        <span className="inline-block text-[10px] font-bold uppercase tracking-wider bg-primary/10 text-primary px-2.5 py-0.5 rounded-full mb-1">Seçili Kumaş</span>
-                                        <p className="font-serif text-lg text-gray-900 leading-tight">{selectedFabric.name}</p>
-                                        <p className="text-gray-500 text-xs">Birim Fiyatı: {selectedFabric.price_per_sqm.toLocaleString('tr-TR')} $ / m²</p>
-                                        <p className="text-gray-900 font-medium text-xs mt-1">
-                                            Kumaş Farkı: <span className="text-sm font-semibold text-primary">{(selectedFabric.price_per_sqm * (product.fabric_sqm_required || 0)).toLocaleString('tr-TR')} $</span>
-                                        </p>
-                                    </div>
                                 </div>
-                            )}
-                        </div>
+                            </div>
+                        )}
 
-                        {/* Takım İçeriği Değiştir (Sadece isTeam ise) */}
+                        {/* Özelleştir (Sadece isTeam ise) */}
                         {isTeam && (
-                            <div id="team-menu-section" className="border-t border-border pt-6 scroll-mt-20">
-                                <button 
-                                    onClick={() => setIsTeamMenuOpen(!isTeamMenuOpen)}
-                                    className="flex items-center justify-between w-full text-left"
-                                >
-                                    <h4 className="text-lg font-serif">Takım İçeriğini Değiştir</h4>
-                                    {isTeamMenuOpen ? <ChevronUp size={20} /> : <ChevronDown size={20} />}
-                                </button>
-                                
-                                {isTeamMenuOpen && (
-                                    <div className="mt-4 space-y-3">
-                                        {product.set_items.map((item: any) => {
-                                            const availableLegs = item.leg_color ? item.leg_color.split(',').map((s: string) => s.trim()).filter(Boolean) : [];
-                                            return (
-                                            <div key={item.id} className="flex flex-row gap-4 bg-gray-50 p-3 sm:p-4 rounded-lg border border-gray-100">
-                                                {/* Sol taraf: Görsel */}
-                                                <div className="w-20 h-20 bg-white border border-gray-200 rounded-md overflow-hidden shrink-0 flex items-center justify-center relative mt-1">
+                            <div id="team-menu-section" className="border-t border-border pt-6">
+                                <h4 className="text-base font-bold uppercase tracking-widest text-foreground/80 mb-4">Özelleştir</h4>
+                                <div className="space-y-4">
+                                    {product.set_items.map((item: any) => {
+                                        const availableLegs = item.leg_color ? item.leg_color.split(',').map((s: string) => s.trim()).filter(Boolean) : [];
+                                        const selectedItemFabricId = selectedFabrics[item.id] || product.default_fabric_id;
+                                        const selectedItemFabric = fabrics?.find((f: any) => f.id === selectedItemFabricId);
+                                        return (
+                                            <div key={item.id} className="flex flex-row gap-4 bg-gray-50 p-3 sm:p-4 rounded-xl border border-gray-100">
+                                                {/* Left: Image */}
+                                                <div className="w-20 h-20 bg-white border border-gray-200 rounded-lg overflow-hidden shrink-0 flex items-center justify-center relative mt-1">
                                                     {item.image_url ? (
                                                         <img src={item.image_url} alt={item.name} className="w-full h-full object-cover" />
                                                     ) : (
@@ -357,92 +455,85 @@ export default function ProductPage() {
                                                     )}
                                                 </div>
 
-                                                <div className="flex-1 flex flex-col justify-between">
+                                                <div className="flex-1 flex flex-col justify-between min-w-0">
                                                     <div className="flex flex-wrap sm:flex-nowrap items-start justify-between gap-3 mb-2">
-                                                        <div>
-                                                            <p className="font-semibold text-gray-800 text-lg">{item.name}</p>
-                                                            <p className="text-sm text-primary font-medium">+{item.base_price.toLocaleString('tr-TR')} TL</p>
+                                                        <div className="min-w-0">
+                                                            <p className="font-semibold text-gray-800 text-base truncate">{item.name}</p>
+                                                            <p className="text-xs text-primary font-medium">+{item.base_price.toLocaleString('tr-TR')} TL</p>
                                                         </div>
-                                                        <div className="flex items-center gap-3">
+                                                        <div className="flex items-center gap-2 shrink-0">
                                                             <button 
                                                                 onClick={() => setSetQuantities({...setQuantities, [item.id]: Math.max(0, (setQuantities[item.id] || 0) - 1)})}
-                                                                className="w-8 h-8 flex items-center justify-center border border-gray-300 rounded bg-white hover:bg-gray-100 transition-colors"
+                                                                className="w-7 h-7 flex items-center justify-center border border-gray-300 rounded bg-white hover:bg-gray-100 transition-colors text-sm"
                                                             >-</button>
-                                                            <span className="w-5 text-center font-bold text-lg">{setQuantities[item.id] || 0}</span>
+                                                            <span className="w-4 text-center font-bold text-sm">{setQuantities[item.id] || 0}</span>
                                                             <button 
                                                                 onClick={() => setSetQuantities({...setQuantities, [item.id]: (setQuantities[item.id] || 0) + 1})}
-                                                                className="w-8 h-8 flex items-center justify-center border border-gray-300 rounded bg-white hover:bg-gray-100 transition-colors"
+                                                                className="w-7 h-7 flex items-center justify-center border border-gray-300 rounded bg-white hover:bg-gray-100 transition-colors text-sm"
                                                             >+</button>
                                                         </div>
                                                     </div>
-                                                    <div className="text-xs text-gray-500 pt-2 border-t border-gray-200 mt-2">
-                                                        <div className="flex flex-col gap-3">
-                                                            <div className="flex flex-wrap items-center justify-between gap-2">
-                                                                <div className="flex flex-col sm:flex-row sm:items-center gap-2">
-                                                                    <span className="font-medium text-gray-700">Seçili Kumaş:</span>
-                                                                    {selectedFabrics[item.id] ? (
-                                                                        <div className="flex items-center gap-2 bg-white px-2.5 py-1.5 border rounded-lg shadow-sm w-fit">
-                                                                            {fabrics?.find((f: any) => f.id === selectedFabrics[item.id])?.image_url && (
-                                                                                <img 
-                                                                                    src={fabrics.find((f: any) => f.id === selectedFabrics[item.id]).image_url} 
-                                                                                    alt="" 
-                                                                                    className="w-8 h-8 rounded object-cover border border-gray-100 shadow-inner" 
-                                                                                />
-                                                                            )}
-                                                                            <span className="font-semibold text-primary">
-                                                                                {fabrics?.find((f: any) => f.id === selectedFabrics[item.id])?.name || "Bilinmiyor"}
-                                                                            </span>
-                                                                        </div>
-                                                                    ) : (
-                                                                        <span className="text-gray-400 italic">Standart Kumaş</span>
-                                                                    )}
-                                                                </div>
-                                                                <div className="flex items-center gap-2">
-                                                                    {selectedFabrics[item.id] && (
+                                                    
+                                                    <div className="text-xs text-gray-500 pt-2 border-t border-gray-200 mt-2 space-y-3">
+                                                        {/* Fabric Selection */}
+                                                        <div className="flex flex-col gap-1.5">
+                                                            <div className="flex justify-between items-center">
+                                                                <span className="font-medium text-gray-700">Kumaş:</span>
+                                                                <span className="font-semibold text-primary">
+                                                                    {selectedItemFabric?.name || "Standart Kumaş"}
+                                                                </span>
+                                                            </div>
+                                                            <div className="flex flex-wrap gap-1">
+                                                                {fabrics?.filter(f => f.is_active !== false).map((fabric) => {
+                                                                    const isSelected = selectedItemFabricId === fabric.id;
+                                                                    return (
                                                                         <button
-                                                                            onClick={() => {
-                                                                                const newFabrics = { ...selectedFabrics };
-                                                                                delete newFabrics[item.id];
-                                                                                setSelectedFabrics(newFabrics);
-                                                                            }}
-                                                                            className="px-3 py-1 bg-red-50 text-red-600 hover:bg-red-600 hover:text-white transition-colors rounded text-xs font-semibold"
+                                                                            key={fabric.id}
+                                                                            type="button"
+                                                                            onClick={() => setSelectedFabrics(prev => ({ ...prev, [item.id]: fabric.id }))}
+                                                                            className={`relative w-6 h-6 rounded-full overflow-hidden border transition-all ${
+                                                                                isSelected
+                                                                                    ? "ring-2 ring-primary border-transparent ring-offset-1 scale-105"
+                                                                                    : "border-gray-200 hover:border-gray-400"
+                                                                            }`}
+                                                                            title={fabric.name}
                                                                         >
-                                                                            SİL
+                                                                            {fabric.image_url ? (
+                                                                                <img src={fabric.image_url} alt={fabric.name} className="w-full h-full object-cover" />
+                                                                            ) : (
+                                                                                <div className="w-full h-full bg-gray-200 flex items-center justify-center text-[6px] text-gray-500">?</div>
+                                                                            )}
                                                                         </button>
-                                                                    )}
-                                                                    <button 
-                                                                        onClick={() => { setActiveFabricItemId(item.id); setIsFabricPanelOpen(true); }}
-                                                                        className="px-3 py-1 bg-gray-200 hover:bg-primary hover:text-white transition-colors rounded text-xs font-semibold text-gray-800"
-                                                                    >
-                                                                        KUMAŞ SEÇ
-                                                                    </button>
+                                                                    );
+                                                                })}
+                                                            </div>
+                                                        </div>
+
+                                                        {/* Leg Selection */}
+                                                        <div className="flex items-center gap-2 pt-1 border-t border-gray-100/50">
+                                                            <span className="font-medium text-gray-700">Seçili Ayak:</span>
+                                                            {availableLegs.length > 0 ? (
+                                                                <div className="flex gap-1.5 flex-wrap">
+                                                                    {availableLegs.map((leg: string) => (
+                                                                        <button
+                                                                            key={leg}
+                                                                            onClick={() => setSelectedLegs(prev => ({...prev, [item.id]: leg}))}
+                                                                            className={`px-2 py-0.5 text-[10px] rounded transition-all font-medium ${selectedLegs[item.id] === leg ? 'bg-gray-800 text-white shadow-sm' : 'bg-white text-gray-600 border border-gray-300 hover:border-gray-500'}`}
+                                                                        >
+                                                                            {leg}
+                                                                        </button>
+                                                                    ))}
                                                                 </div>
-                                                            </div>
-                                                            <div className="flex items-center gap-3 pt-2 border-t border-gray-100/50">
-                                                                <span className="font-medium text-gray-700">Seçili Ayak:</span>
-                                                                {availableLegs.length > 0 ? (
-                                                                    <div className="flex gap-2 flex-wrap">
-                                                                        {availableLegs.map((leg: string) => (
-                                                                            <button
-                                                                                key={leg}
-                                                                                onClick={() => setSelectedLegs(prev => ({...prev, [item.id]: leg}))}
-                                                                                className={`px-3 py-1 text-[11px] rounded transition-all font-medium ${selectedLegs[item.id] === leg ? 'bg-gray-800 text-white shadow-sm' : 'bg-white text-gray-600 border border-gray-300 hover:border-gray-500'}`}
-                                                                            >
-                                                                                {leg}
-                                                                            </button>
-                                                                        ))}
-                                                                    </div>
-                                                                ) : (
-                                                                    <span className="text-gray-400">Standart Ayaklar</span>
-                                                                )}
-                                                            </div>
+                                                            ) : (
+                                                                <span className="text-gray-400">Standart Ayaklar</span>
+                                                            )}
                                                         </div>
                                                     </div>
                                                 </div>
                                             </div>
-                                        )})}
-                                    </div>
-                                )}
+                                        );
+                                    })}
+                                </div>
                             </div>
                         )}
 
@@ -608,7 +699,7 @@ export default function ProductPage() {
                                 </div>
                             </div>
                         </div>
-                    </motion.div>
+                    </div>
                 </div>
             </div>
 
