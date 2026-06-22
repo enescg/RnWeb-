@@ -201,8 +201,47 @@ export default function ProductPage() {
         finalPrice = basePrice + (sqm * (selectedFabric?.price_per_sqm || 0));
     }
 
+    const handleAddToCart = () => {
+        addToCart({
+            id: `${product.id}-${Date.now()}`,
+            productId: product.id,
+            name: product.title,
+            price: finalPrice,
+            quantity: quantity,
+            image: product.images?.[0],
+            fabricName: selectedFabric?.name,
+            isTeam,
+            isFreeShipping: product.is_free_shipping !== false,
+            isFreeInstallation: product.is_free_installation !== false,
+            deliveryTimeWeeks: product.delivery_time_weeks || 4,
+            setItems: isTeam ? product.set_items.map((item: any) => ({
+                ...item,
+                quantity: setQuantities[item.id] || 0,
+                selectedFabric: selectedFabrics[item.id] ? fabrics?.find((f: any) => f.id === selectedFabrics[item.id])?.name : "Standart",
+                selectedLeg: selectedLegs[item.id] || "Standart"
+            })) : undefined
+        });
+    };
+
+    const getCustomizationSummary = () => {
+        if (isTeam) {
+            const activeItems = product.set_items.filter((item: any) => (setQuantities[item.id] || 0) > 0);
+            if (activeItems.length === 0) return "Hiçbir parça seçilmedi";
+            return activeItems.map((item: any) => {
+                const qty = setQuantities[item.id];
+                const itemFabricId = selectedFabrics[item.id];
+                const itemFabric = itemFabricId ? fabrics?.find((f: any) => f.id === itemFabricId) : null;
+                const fabricName = itemFabric ? itemFabric.name : "Standart";
+                const legText = selectedLegs[item.id] ? `, Ayak: ${selectedLegs[item.id]}` : "";
+                return `${qty > 1 ? `${qty}x ` : ""}${item.name} (${fabricName}${legText})`;
+            }).join(" + ");
+        } else {
+            return `Kumaş: ${selectedFabric?.name || "Standart Kumaş"}`;
+        }
+    };
+
     return (
-        <main className="min-h-screen font-sans">
+        <main className="min-h-screen font-sans pb-24 md:pb-28">
             <Navbar variant="product" breadcrumbs={breadcrumbs} />
 
             <div className="container mx-auto px-6 py-12 md:py-20">
@@ -411,27 +450,7 @@ export default function ProductPage() {
                             <QuantitySelector quantity={quantity} onChange={setQuantity} />
                             <div className="flex gap-3">
                                 <button 
-                                    onClick={() => {
-                                        addToCart({
-                                            id: `${product.id}-${Date.now()}`,
-                                            productId: product.id,
-                                            name: product.title,
-                                            price: finalPrice,
-                                            quantity: quantity,
-                                            image: product.images?.[0],
-                                            fabricName: selectedFabric?.name,
-                                            isTeam,
-                                            isFreeShipping: product.is_free_shipping !== false,
-                                            isFreeInstallation: product.is_free_installation !== false,
-                                            deliveryTimeWeeks: product.delivery_time_weeks || 4,
-                                            setItems: isTeam ? product.set_items.map((item: any) => ({
-                                                ...item,
-                                                quantity: setQuantities[item.id] || 0,
-                                                selectedFabric: selectedFabrics[item.id] ? fabrics?.find((f: any) => f.id === selectedFabrics[item.id])?.name : "Standart",
-                                                selectedLeg: selectedLegs[item.id] || "Standart"
-                                            })) : undefined
-                                        });
-                                    }}
+                                    onClick={handleAddToCart}
                                     disabled={cartLoading}
                                     className="flex-1 flex items-center justify-center gap-2 bg-primary text-white py-4 text-sm uppercase tracking-wider font-medium hover:bg-primary/90 transition-colors disabled:opacity-50"
                                 >
@@ -593,7 +612,6 @@ export default function ProductPage() {
                 </div>
             </div>
 
-            {/* Kumaş Drawer Paneli */}
             <FabricSidePanel 
                 isOpen={isFabricPanelOpen}
                 onClose={() => setIsFabricPanelOpen(false)}
@@ -609,6 +627,40 @@ export default function ProductPage() {
             />
             {product && <AlternativeProducts currentProductId={product.id} categoryId={product.category_id} />}
             
+            {/* Sticky Bottom Add to Cart Bar */}
+            <div className="fixed bottom-0 left-0 right-0 z-40 bg-white/95 backdrop-blur-md border-t border-gray-200/80 shadow-[0_-8px_30px_rgba(0,0,0,0.08)] py-3.5 md:py-4 transition-all duration-300">
+                <div className="container mx-auto px-6 flex items-center justify-between gap-4">
+                    <div className="flex-1 min-w-0">
+                        <div className="flex items-baseline gap-2 flex-wrap">
+                            <span className="text-xl md:text-2xl font-serif text-foreground font-bold leading-none">
+                                {(finalPrice * quantity).toLocaleString('tr-TR')} TL
+                            </span>
+                            {quantity > 1 && (
+                                <span className="text-xs text-gray-400">({quantity} adet)</span>
+                            )}
+                        </div>
+                        <span className="text-xs text-gray-500 font-light truncate block mt-1" title={getCustomizationSummary()}>
+                            {getCustomizationSummary()}
+                        </span>
+                    </div>
+                    
+                    <div className="flex items-center gap-3 shrink-0">
+                        <div className="hidden md:block scale-90 origin-right">
+                            <QuantitySelector quantity={quantity} onChange={setQuantity} />
+                        </div>
+                        
+                        <button
+                            onClick={handleAddToCart}
+                            disabled={cartLoading}
+                            className="flex items-center justify-center gap-2 bg-primary text-white px-6 py-3.5 md:px-8 md:py-4 text-xs md:text-sm uppercase tracking-wider font-medium hover:bg-primary/90 transition-colors disabled:opacity-50 shadow-sm"
+                        >
+                            <ShoppingBag size={16} />
+                            <span>Sepete Ekle</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+
             <Footer />
         </main>
     );
