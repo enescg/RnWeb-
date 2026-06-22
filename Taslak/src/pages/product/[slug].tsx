@@ -1,7 +1,7 @@
 import { useParams, Link } from "wouter";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Star, Check, ShoppingBag, Heart, Minus, Plus, ChevronDown, ChevronUp, Truck, CreditCard, Wrench } from "lucide-react";
+import { Star, Check, ShoppingBag, Heart, Minus, Plus, ChevronDown, ChevronUp, ChevronLeft, ChevronRight, Truck, CreditCard, Wrench } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { fetchProducts, fetchFabrics, fetchCategories } from "@/lib/api";
 import Navbar from "@/components/Navbar";
@@ -9,6 +9,15 @@ import FabricSidePanel from "@/components/FabricSidePanel";
 import Footer from "@/components/Footer";
 import { useCart } from "@/contexts/CartContext";
 import { useFavorites } from "@/contexts/FavoritesContext";
+
+interface Fabric {
+    id: string;
+    name: string;
+    image_url?: string;
+    price_per_sqm: number;
+    is_active?: boolean;
+    group_name?: string;
+}
 
 // --- Alternative Products ---
 const AlternativeProducts = ({ currentProductId, categoryId }: { currentProductId: string, categoryId: string }) => {
@@ -89,6 +98,7 @@ const AlternativeProducts = ({ currentProductId, categoryId }: { currentProductI
 // --- Image Gallery ---
 const ImageGallery = ({ images }: { images: string[] }) => {
     const [activeIndex, setActiveIndex] = useState(0);
+    const [touchStartX, setTouchStartX] = useState(0);
 
     // Reset active index if list of images changes (e.g. fabric change prepends a new image)
     useEffect(() => {
@@ -99,10 +109,50 @@ const ImageGallery = ({ images }: { images: string[] }) => {
         return <div className="w-full h-full bg-gray-100 flex items-center justify-center">Görsel Yok</div>;
     }
 
+    const handleTouchStart = (e: React.TouchEvent) => {
+        setTouchStartX(e.touches[0].clientX);
+    };
+
+    const handleTouchEnd = (e: React.TouchEvent) => {
+        const touchEndX = e.changedTouches[0].clientX;
+        const diff = touchStartX - touchEndX;
+
+        if (Math.abs(diff) > 50) { // Swipe threshold of 50px
+            if (diff > 0) {
+                // Swiped left -> show next image
+                setActiveIndex((prev) => (prev + 1) % images.length);
+            } else {
+                // Swiped right -> show previous image
+                setActiveIndex((prev) => (prev - 1 + images.length) % images.length);
+            }
+        }
+    };
+
     return (
-        <div className="relative w-full h-full flex flex-col justify-between">
-            {/* Main Image Container */}
-            <div className="relative flex-1 w-full min-h-0 overflow-hidden bg-card">
+        <div className="relative w-full h-full flex flex-row gap-2.5 sm:gap-4">
+            {/* Left Side: Vertically stacked thumbnails on all screen sizes */}
+            {images.length > 1 && (
+                <div className="flex flex-col gap-2 overflow-y-auto py-0 shrink-0 w-14 sm:w-16 lg:w-20 scrollbar-none justify-start">
+                    {images.map((img, index) => (
+                        <button
+                            key={index}
+                            onClick={() => setActiveIndex(index)}
+                            className={`w-14 h-14 sm:w-16 sm:h-16 lg:w-20 lg:h-20 flex-shrink-0 overflow-hidden border transition-all rounded-md ${
+                                activeIndex === index ? 'border-primary ring-1 ring-primary/30 scale-95 shadow-sm' : 'border-gray-200 hover:border-gray-400'
+                            }`}
+                        >
+                            <img src={img} alt="" className="w-full h-full object-cover" />
+                        </button>
+                    ))}
+                </div>
+            )}
+
+            {/* Right Side: Main Image Container */}
+            <div 
+                onTouchStart={handleTouchStart}
+                onTouchEnd={handleTouchEnd}
+                className="relative flex-1 w-full min-h-0 aspect-[4/3] sm:aspect-square overflow-hidden bg-card"
+            >
                 <AnimatePresence mode="wait">
                     <motion.img
                         key={activeIndex}
@@ -115,6 +165,26 @@ const ImageGallery = ({ images }: { images: string[] }) => {
                         className="w-full h-full object-cover lg:object-cover"
                     />
                 </AnimatePresence>
+
+                {/* Left/Right Arrows */}
+                {images.length > 1 && (
+                    <>
+                        <button
+                            onClick={() => setActiveIndex((prev) => (prev - 1 + images.length) % images.length)}
+                            className="absolute left-3 top-1/2 -translate-y-1/2 w-9 h-9 rounded-full bg-white/75 hover:bg-white border border-gray-200/50 flex items-center justify-center text-gray-700 hover:text-black transition-all hover:scale-105 shadow-sm group z-10"
+                            aria-label="Önceki Görsel"
+                        >
+                            <ChevronLeft size={18} className="transition-transform group-hover:-translate-x-0.5" />
+                        </button>
+                        <button
+                            onClick={() => setActiveIndex((prev) => (prev + 1) % images.length)}
+                            className="absolute right-3 top-1/2 -translate-y-1/2 w-9 h-9 rounded-full bg-white/75 hover:bg-white border border-gray-200/50 flex items-center justify-center text-gray-700 hover:text-black transition-all hover:scale-105 shadow-sm group z-10"
+                            aria-label="Sonraki Görsel"
+                        >
+                            <ChevronRight size={18} className="transition-transform group-hover:translate-x-0.5" />
+                        </button>
+                    </>
+                )}
                 
                 {/* Mobile Pagination Dots */}
                 {images.length > 1 && (
@@ -131,23 +201,6 @@ const ImageGallery = ({ images }: { images: string[] }) => {
                     </div>
                 )}
             </div>
-            
-            {/* Desktop Thumbnails */}
-            {images.length > 1 && (
-                <div className="hidden lg:flex gap-3 mt-4 overflow-x-auto py-1">
-                    {images.map((img, index) => (
-                        <button
-                            key={index}
-                            onClick={() => setActiveIndex(index)}
-                            className={`w-20 h-20 flex-shrink-0 overflow-hidden border-2 transition-all rounded-md ${
-                                activeIndex === index ? 'border-primary scale-95 shadow-sm' : 'border-gray-200 hover:border-gray-400'
-                            }`}
-                        >
-                            <img src={img} alt="" className="w-full h-full object-cover" />
-                        </button>
-                    ))}
-                </div>
-            )}
         </div>
     );
 };
@@ -179,6 +232,9 @@ export default function ProductPage() {
     const [activeFabricItemId, setActiveFabricItemId] = useState<string | null>(null);
     const [isTeamMenuOpen, setIsTeamMenuOpen] = useState(false);
     const [openAccordion, setOpenAccordion] = useState<string | null>("ozellikler");
+    const [activeSetItemForFabric, setActiveSetItemForFabric] = useState<string | null>(null);
+    const [activeSetItemForLeg, setActiveSetItemForLeg] = useState<string | null>(null);
+    const [previewFabric, setPreviewFabric] = useState<Fabric | null>(null);
 
     const product = products?.find((p: any) => p.id === slug); // API şimdilik ID bazlı çalışıyor
 
@@ -197,6 +253,26 @@ export default function ProductPage() {
             setSelectedFabricId(product.default_fabric_id);
         }
     }, [product, selectedFabricId]);
+
+    const groupedFabrics = useMemo(() => {
+        const activeFabrics = fabrics?.filter((f) => f.is_active !== false) || [];
+        const groups: Record<string, Fabric[]> = {};
+        const standalone: Fabric[] = [];
+
+        activeFabrics.forEach((fabric) => {
+            const gName = fabric.group_name?.trim();
+            if (gName) {
+                if (!groups[gName]) {
+                    groups[gName] = [];
+                }
+                groups[gName].push(fabric);
+            } else {
+                standalone.push(fabric);
+            }
+        });
+
+        return { groups, standalone };
+    }, [fabrics]);
 
     if (pLoading || fLoading) {
         return <div className="min-h-screen flex items-center justify-center">Yükleniyor...</div>;
@@ -225,26 +301,6 @@ export default function ProductPage() {
     let basePrice = product.base_price_without_fabric || 0;
     let finalPrice = 0;
     const selectedFabric = fabrics?.find((f: any) => f.id === selectedFabricId);
-
-    const groupedFabrics = useMemo(() => {
-        const activeFabrics = fabrics?.filter((f) => f.is_active !== false) || [];
-        const groups: Record<string, Fabric[]> = {};
-        const standalone: Fabric[] = [];
-
-        activeFabrics.forEach((fabric) => {
-            const gName = fabric.group_name?.trim();
-            if (gName) {
-                if (!groups[gName]) {
-                    groups[gName] = [];
-                }
-                groups[gName].push(fabric);
-            } else {
-                standalone.push(fabric);
-            }
-        });
-
-        return { groups, standalone };
-    }, [fabrics]);
 
     const galleryImages = [
         ...(selectedFabric?.image_url ? [selectedFabric.image_url] : []),
@@ -281,7 +337,7 @@ export default function ProductPage() {
                 ...item,
                 quantity: setQuantities[item.id] || 0,
                 selectedFabric: selectedFabrics[item.id] ? fabrics?.find((f: any) => f.id === selectedFabrics[item.id])?.name : "Standart",
-                selectedLeg: selectedLegs[item.id] || "Standart"
+                selectedLeg: selectedLegs[item.id] || "Ahşap Meşe"
             })) : undefined
         });
     };
@@ -295,7 +351,7 @@ export default function ProductPage() {
                 const itemFabricId = selectedFabrics[item.id];
                 const itemFabric = itemFabricId ? fabrics?.find((f: any) => f.id === itemFabricId) : null;
                 const fabricName = itemFabric ? itemFabric.name : "Standart";
-                const legText = selectedLegs[item.id] ? `, Ayak: ${selectedLegs[item.id]}` : "";
+                const legText = `, Ayak: ${selectedLegs[item.id] || "Ahşap Meşe"}`;
                 return `${qty > 1 ? `${qty}x ` : ""}${item.name} (${fabricName}${legText})`;
             }).join(" + ");
         } else {
@@ -308,16 +364,37 @@ export default function ProductPage() {
             <Navbar variant="product" breadcrumbs={breadcrumbs} />
 
             <div className="lg:container lg:mx-auto lg:px-6 lg:py-20">
-                <div className="flex flex-col lg:grid lg:grid-cols-2 gap-0 lg:gap-16 items-start h-[calc(100vh-4rem)] lg:h-auto overflow-hidden lg:overflow-visible">
+                <div className="flex flex-col lg:grid lg:grid-cols-2 gap-0 lg:gap-16 items-start h-auto lg:h-auto overflow-visible lg:overflow-visible">
                     
+                    {/* Mobile Title Block */}
+                    <div className="block lg:hidden w-full px-6 py-4 pb-2 bg-white shrink-0 border-b border-gray-100">
+                        <div className="flex items-center justify-between gap-4 mb-2">
+                            <span className="inline-block px-2.5 py-0.5 text-[10px] uppercase tracking-widest bg-primary text-white font-medium">
+                                {category?.name}
+                            </span>
+                            {category && (
+                                <Link href={`/categories/${category.slug}`}>
+                                    <a className="inline-flex items-center gap-1 text-xs text-primary font-medium hover:underline">
+                                        <ChevronLeft size={14} className="stroke-[2.5]" />
+                                        <span>Geri Dön</span>
+                                    </a>
+                                </Link>
+                            )}
+                        </div>
+                        <h1 className="text-2xl font-serif text-foreground leading-tight">{product.title}</h1>
+                        {!isTeam && product.description && (
+                            <p className="text-xs text-foreground/60 font-light mt-1 line-clamp-2">{product.description}</p>
+                        )}
+                    </div>
+
                     {/* Image Column */}
-                    <div className="w-full h-[38vh] min-h-[250px] lg:h-auto shrink-0 lg:sticky lg:top-24 bg-card border-b lg:border-b-0 border-gray-100 p-2 lg:p-0">
+                    <div className="w-full h-[38vh] min-h-[250px] lg:h-auto shrink-0 sticky top-[57px] lg:sticky lg:top-24 z-20 bg-card border-b lg:border-b-0 border-gray-100 p-2 lg:p-0">
                         <ImageGallery images={galleryImages} />
                     </div>
 
                     {/* Options Column */}
-                    <div className="flex-1 overflow-y-auto lg:overflow-visible p-6 lg:p-0 space-y-8 pb-32 lg:pb-0">
-                        <div>
+                    <div className="w-full lg:flex-1 p-6 lg:p-0 space-y-8 pb-32 lg:pb-0 overflow-visible lg:overflow-visible">
+                        <div className="hidden lg:block">
                             <span className="inline-block px-3 py-1 text-xs uppercase tracking-widest bg-primary text-white mb-4">
                                 {category?.name}
                             </span>
@@ -325,31 +402,6 @@ export default function ProductPage() {
                             {!isTeam && product.description && (
                                 <p className="text-lg text-foreground/60 font-light">{product.description}</p>
                             )}
-                        </div>
-
-                        <div className="flex flex-col gap-2">
-                            <div className="flex items-center gap-4">
-                                <span className="text-3xl font-serif text-foreground font-bold">
-                                    {finalPrice.toLocaleString('tr-TR')} TL
-                                </span>
-                                <div className="flex items-center gap-1">
-                                    {[...Array(5)].map((_, i) => <Star key={i} size={16} className="fill-primary text-primary" />)}
-                                </div>
-                            </div>
-                            <div className="flex flex-wrap gap-2">
-                                {product.is_free_shipping !== false && (
-                                    <div className="flex items-center gap-1.5 bg-gray-100 text-gray-600 text-xs px-2.5 py-1 rounded-md w-fit font-medium">
-                                        <Truck size={14} />
-                                        <span>Ücretsiz Teslimat</span>
-                                    </div>
-                                )}
-                                {product.is_free_installation !== false && (
-                                    <div className="flex items-center gap-1.5 bg-gray-100 text-gray-600 text-xs px-2.5 py-1 rounded-md w-fit font-medium">
-                                        <Wrench size={14} />
-                                        <span>Ücretsiz Kurulum</span>
-                                    </div>
-                                )}
-                            </div>
                         </div>
 
                         {/* Kumaş Seçenekleri (Sadece Tekil Ürün ise) */}
@@ -438,102 +490,303 @@ export default function ProductPage() {
                         {/* Özelleştir (Sadece isTeam ise) */}
                         {isTeam && (
                             <div id="team-menu-section" className="border-t border-border pt-6">
-                                <h4 className="text-base font-bold uppercase tracking-widest text-foreground/80 mb-4">Özelleştir</h4>
-                                <div className="space-y-4">
-                                    {product.set_items.map((item: any) => {
-                                        const availableLegs = item.leg_color ? item.leg_color.split(',').map((s: string) => s.trim()).filter(Boolean) : [];
-                                        const selectedItemFabricId = selectedFabrics[item.id] || product.default_fabric_id;
-                                        const selectedItemFabric = fabrics?.find((f: any) => f.id === selectedItemFabricId);
-                                        return (
-                                            <div key={item.id} className="flex flex-row gap-4 bg-gray-50 p-3 sm:p-4 rounded-xl border border-gray-100">
-                                                {/* Left: Image */}
-                                                <div className="w-20 h-20 bg-white border border-gray-200 rounded-lg overflow-hidden shrink-0 flex items-center justify-center relative mt-1">
-                                                    {item.image_url ? (
-                                                        <img src={item.image_url} alt={item.name} className="w-full h-full object-cover" />
-                                                    ) : (
-                                                        <span className="text-[10px] text-gray-400">Görsel Yok</span>
-                                                    )}
-                                                </div>
+                                {activeSetItemForFabric ? (
+                                    // SUB-VIEW: Fabric Selection
+                                    (() => {
+                                        const activeItem = product.set_items.find((i: any) => i.id === activeSetItemForFabric);
+                                        if (!activeItem) return null;
 
-                                                <div className="flex-1 flex flex-col justify-between min-w-0">
-                                                    <div className="flex flex-wrap sm:flex-nowrap items-start justify-between gap-3 mb-2">
-                                                        <div className="min-w-0">
-                                                            <p className="font-semibold text-gray-800 text-base truncate">{item.name}</p>
-                                                            <p className="text-xs text-primary font-medium">+{item.base_price.toLocaleString('tr-TR')} TL</p>
-                                                        </div>
-                                                        <div className="flex items-center gap-2 shrink-0">
-                                                            <button 
-                                                                onClick={() => setSetQuantities({...setQuantities, [item.id]: Math.max(0, (setQuantities[item.id] || 0) - 1)})}
-                                                                className="w-7 h-7 flex items-center justify-center border border-gray-300 rounded bg-white hover:bg-gray-100 transition-colors text-sm"
-                                                            >-</button>
-                                                            <span className="w-4 text-center font-bold text-sm">{setQuantities[item.id] || 0}</span>
-                                                            <button 
-                                                                onClick={() => setSetQuantities({...setQuantities, [item.id]: (setQuantities[item.id] || 0) + 1})}
-                                                                className="w-7 h-7 flex items-center justify-center border border-gray-300 rounded bg-white hover:bg-gray-100 transition-colors text-sm"
-                                                            >+</button>
-                                                        </div>
+                                        return (
+                                            <div className="space-y-4">
+                                                <div className="flex items-center gap-3 border-b border-border pb-3">
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => {
+                                                            setActiveSetItemForFabric(null);
+                                                            setPreviewFabric(null);
+                                                        }}
+                                                        className="flex items-center justify-center w-8 h-8 rounded-full bg-gray-100 hover:bg-gray-200 text-primary transition-all shrink-0"
+                                                        title="Geri Dön"
+                                                    >
+                                                        <ChevronLeft size={18} className="stroke-[3]" />
+                                                    </button>
+                                                    <h4 className="text-sm sm:text-base font-bold uppercase tracking-widest text-foreground/80 truncate">
+                                                        Özelleştir - <span className="text-primary">{activeItem.name}</span>
+                                                    </h4>
+                                                </div>
+                                                <p className="text-xs text-gray-500 font-medium">Kumaş ve Renk Seçimi</p>
+                                                
+                                                <div className="relative group/fabric-scroll">
+                                                    {/* Left Navigation Arrow */}
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => {
+                                                            const container = document.getElementById(`fabric-scroll-${activeItem.id}`);
+                                                            if (container) {
+                                                                container.scrollBy({ left: -115, behavior: 'smooth' });
+                                                            }
+                                                        }}
+                                                        className="absolute -left-2 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full bg-white/95 border border-gray-200 shadow-md flex items-center justify-center text-gray-700 hover:text-black hover:bg-white z-10 transition-opacity opacity-100 lg:opacity-0 lg:group-hover/fabric-scroll:opacity-100"
+                                                        title="Sola Kaydır"
+                                                    >
+                                                        <ChevronLeft size={14} className="stroke-[2.5]" />
+                                                    </button>
+
+                                                    {/* Scroll Container */}
+                                                    <div 
+                                                        id={`fabric-scroll-${activeItem.id}`}
+                                                        className="flex flex-row flex-nowrap gap-4 overflow-x-auto py-3 w-full max-w-full scrollbar-thin touch-pan-x"
+                                                    >
+                                                        {(fabrics || []).filter(f => f.is_active !== false).map((fabric) => {
+                                                            const isSelected = (selectedFabrics[activeItem.id] || product.default_fabric_id) === fabric.id;
+                                                            const priceDiff = fabric.price_per_sqm * activeItem.fabric_sqm;
+                                                            return (
+                                                                <div
+                                                                    key={fabric.id}
+                                                                    className={`shrink-0 w-[100px] sm:w-[120px] border transition-all rounded-lg overflow-hidden bg-white flex flex-col ${
+                                                                        isSelected ? 'border-primary ring-2 ring-primary/20 shadow-md' : 'border-gray-200 hover:border-gray-300'
+                                                                    }`}
+                                                                >
+                                                                    {/* Image Area */}
+                                                                    <div className="w-full h-[70px] sm:h-[85px] relative bg-gray-50 border-b border-gray-100">
+                                                                        {fabric.image_url ? (
+                                                                            <img src={fabric.image_url} alt={fabric.name} className="w-full h-full object-cover" />
+                                                                        ) : (
+                                                                            <div className="w-full h-full flex items-center justify-center text-[10px] text-gray-400">Görsel Yok</div>
+                                                                        )}
+                                                                        {isSelected && (
+                                                                            <div className="absolute top-1 right-1 bg-primary text-white p-0.5 rounded-full shadow-sm">
+                                                                                <Check size={8} className="stroke-[3]" />
+                                                                            </div>
+                                                                        )}
+                                                                    </div>
+                                                                    {/* Description & Selection button */}
+                                                                    <div className="p-2 text-center flex-1 flex flex-col justify-between">
+                                                                        <div>
+                                                                            <p className="font-semibold text-gray-800 text-[10px] sm:text-[11px] truncate" title={fabric.name}>{fabric.name}</p>
+                                                                            <p className="text-[9px] sm:text-[10px] text-primary font-semibold mt-0.5">+{priceDiff.toLocaleString('tr-TR')} TL</p>
+                                                                        </div>
+                                                                        <button
+                                                                            type="button"
+                                                                            onClick={() => {
+                                                                                setSelectedFabrics(prev => ({ ...prev, [activeItem.id]: fabric.id }));
+                                                                                setActiveSetItemForFabric(null); // Go back to Customize list
+                                                                            }}
+                                                                            className={`w-full mt-1.5 py-1 rounded-md text-[9px] sm:text-[10px] uppercase tracking-wider font-semibold transition-all ${
+                                                                                isSelected 
+                                                                                    ? 'bg-primary/10 text-primary border border-primary/20 cursor-default' 
+                                                                                    : 'bg-primary text-white hover:bg-primary/95 shadow-sm'
+                                                                            }`}
+                                                                        >
+                                                                            {isSelected ? 'Seçili' : 'Seç'}
+                                                                        </button>
+                                                                    </div>
+                                                                </div>
+                                                            );
+                                                        })}
                                                     </div>
-                                                    
-                                                    <div className="text-xs text-gray-500 pt-2 border-t border-gray-200 mt-2 space-y-3">
-                                                        {/* Fabric Selection */}
-                                                        <div className="flex flex-col gap-1.5">
-                                                            <div className="flex justify-between items-center">
-                                                                <span className="font-medium text-gray-700">Kumaş:</span>
-                                                                <span className="font-semibold text-primary">
-                                                                    {selectedItemFabric?.name || "Standart Kumaş"}
-                                                                </span>
-                                                            </div>
-                                                            <div className="flex flex-wrap gap-1">
-                                                                {fabrics?.filter(f => f.is_active !== false).map((fabric) => {
-                                                                    const isSelected = selectedItemFabricId === fabric.id;
+
+                                                    {/* Right Navigation Arrow */}
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => {
+                                                            const container = document.getElementById(`fabric-scroll-${activeItem.id}`);
+                                                            if (container) {
+                                                                container.scrollBy({ left: 115, behavior: 'smooth' });
+                                                            }
+                                                        }}
+                                                        className="absolute -right-2 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full bg-white/95 border border-gray-200 shadow-md flex items-center justify-center text-gray-700 hover:text-black hover:bg-white z-10 transition-opacity opacity-100 lg:opacity-0 lg:group-hover/fabric-scroll:opacity-100"
+                                                        title="Sağa Kaydır"
+                                                    >
+                                                        <ChevronRight size={14} className="stroke-[2.5]" />
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        );
+                                    })()
+                                ) : activeSetItemForLeg ? (
+                                    // SUB-VIEW: Leg Selection
+                                    (() => {
+                                        const activeItem = product.set_items.find((i: any) => i.id === activeSetItemForLeg);
+                                        if (!activeItem) return null;
+                                        
+                                        const DEFAULT_LEGS = [
+                                            { name: "Ahşap Meşe", material: "Ahşap", color: "Meşe", bgClass: "bg-[#e5c290]" },
+                                            { name: "Ahşap Siyah", material: "Ahşap", color: "Siyah", bgClass: "bg-black" },
+                                            
+                                            { name: "Metal Siyah", material: "Metal", color: "Siyah", bgClass: "bg-zinc-800" },
+                                            { name: "Metal Altın", material: "Metal", color: "Altın", bgClass: "bg-amber-400 bg-gradient-to-tr from-amber-500 to-amber-200" },
+                                        ];
+
+                                        const woodLegs = DEFAULT_LEGS.filter(l => l.material === "Ahşap");
+                                        const metalLegs = DEFAULT_LEGS.filter(l => l.material === "Metal");
+
+                                        return (
+                                            <div className="space-y-4">
+                                                <div className="flex items-center gap-3 border-b border-border pb-3">
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => {
+                                                            setActiveSetItemForLeg(null);
+                                                        }}
+                                                        className="flex items-center justify-center w-8 h-8 rounded-full bg-gray-100 hover:bg-gray-200 text-primary transition-all shrink-0"
+                                                        title="Geri Dön"
+                                                    >
+                                                        <ChevronLeft size={18} className="stroke-[3]" />
+                                                    </button>
+                                                    <h4 className="text-sm sm:text-base font-bold uppercase tracking-widest text-foreground/80 truncate">
+                                                        Özelleştir - <span className="text-primary">{activeItem.name}</span>
+                                                    </h4>
+                                                </div>
+                                                <p className="text-xs text-gray-500 font-medium">Ayak Seçimi</p>
+                                                
+                                                <div className="space-y-6">
+                                                    {woodLegs.length > 0 && (
+                                                        <div>
+                                                            <h5 className="text-[10px] font-bold uppercase tracking-wider text-gray-400 mb-2">Ahşap Ayaklar (2 Renk)</h5>
+                                                            <div className="flex flex-row flex-nowrap gap-3 overflow-x-auto py-1 scrollbar-none snap-x w-full max-w-full touch-pan-x">
+                                                                {woodLegs.map((leg) => {
+                                                                    const isSelected = (selectedLegs[activeItem.id] || "Ahşap Meşe") === leg.name;
                                                                     return (
                                                                         <button
-                                                                            key={fabric.id}
+                                                                            key={leg.name}
                                                                             type="button"
-                                                                            onClick={() => setSelectedFabrics(prev => ({ ...prev, [item.id]: fabric.id }))}
-                                                                            className={`relative w-6 h-6 rounded-full overflow-hidden border transition-all ${
-                                                                                isSelected
-                                                                                    ? "ring-2 ring-primary border-transparent ring-offset-1 scale-105"
-                                                                                    : "border-gray-200 hover:border-gray-400"
+                                                                            onClick={() => {
+                                                                                setSelectedLegs(prev => ({ ...prev, [activeItem.id]: leg.name }));
+                                                                                setActiveSetItemForLeg(null); // Go back to main Customize list on selection
+                                                                            }}
+                                                                            className={`snap-start shrink-0 w-28 border transition-all rounded-lg p-2.5 text-center bg-white ${
+                                                                                isSelected ? 'border-primary ring-2 ring-primary/20 shadow-md' : 'border-gray-200 hover:border-gray-400'
                                                                             }`}
-                                                                            title={fabric.name}
                                                                         >
-                                                                            {fabric.image_url ? (
-                                                                                <img src={fabric.image_url} alt={fabric.name} className="w-full h-full object-cover" />
-                                                                            ) : (
-                                                                                <div className="w-full h-full bg-gray-200 flex items-center justify-center text-[6px] text-gray-500">?</div>
-                                                                            )}
+                                                                            <div className={`w-8 h-8 rounded-full mx-auto mb-2 flex items-center justify-center ${leg.bgClass}`}>
+                                                                                {isSelected && <Check size={12} className={leg.name.includes("Beyaz") ? "text-black" : "text-white"} />}
+                                                                            </div>
+                                                                            <span className="text-[11px] font-semibold text-gray-700 block truncate" title={leg.name}>{leg.name}</span>
                                                                         </button>
                                                                     );
                                                                 })}
                                                             </div>
                                                         </div>
-
-                                                        {/* Leg Selection */}
-                                                        <div className="flex items-center gap-2 pt-1 border-t border-gray-100/50">
-                                                            <span className="font-medium text-gray-700">Seçili Ayak:</span>
-                                                            {availableLegs.length > 0 ? (
-                                                                <div className="flex gap-1.5 flex-wrap">
-                                                                    {availableLegs.map((leg: string) => (
+                                                    )}
+                                                    
+                                                    {metalLegs.length > 0 && (
+                                                        <div>
+                                                            <h5 className="text-[10px] font-bold uppercase tracking-wider text-gray-400 mb-2">Metal Ayaklar (2 Renk)</h5>
+                                                            <div className="flex flex-row flex-nowrap gap-3 overflow-x-auto py-1 scrollbar-none snap-x w-full max-w-full touch-pan-x">
+                                                                {metalLegs.map((leg) => {
+                                                                    const isSelected = (selectedLegs[activeItem.id] || "Ahşap Meşe") === leg.name;
+                                                                    return (
                                                                         <button
-                                                                            key={leg}
-                                                                            onClick={() => setSelectedLegs(prev => ({...prev, [item.id]: leg}))}
-                                                                            className={`px-2 py-0.5 text-[10px] rounded transition-all font-medium ${selectedLegs[item.id] === leg ? 'bg-gray-800 text-white shadow-sm' : 'bg-white text-gray-600 border border-gray-300 hover:border-gray-500'}`}
+                                                                            key={leg.name}
+                                                                            type="button"
+                                                                            onClick={() => {
+                                                                                setSelectedLegs(prev => ({ ...prev, [activeItem.id]: leg.name }));
+                                                                                setActiveSetItemForLeg(null); // Go back to main Customize list on selection
+                                                                            }}
+                                                                            className={`snap-start shrink-0 w-28 border transition-all rounded-lg p-2.5 text-center bg-white ${
+                                                                                isSelected ? 'border-primary ring-2 ring-primary/20 shadow-md' : 'border-gray-200 hover:border-gray-400'
+                                                                            }`}
                                                                         >
-                                                                            {leg}
+                                                                            <div className={`w-8 h-8 rounded-full mx-auto mb-2 flex items-center justify-center ${leg.bgClass}`}>
+                                                                                {isSelected && <Check size={12} className={leg.name.includes("Beyaz") ? "text-black" : "text-white"} />}
+                                                                            </div>
+                                                                            <span className="text-[11px] font-semibold text-gray-700 block truncate" title={leg.name}>{leg.name}</span>
                                                                         </button>
-                                                                    ))}
-                                                                </div>
-                                                            ) : (
-                                                                <span className="text-gray-400">Standart Ayaklar</span>
-                                                            )}
+                                                                    );
+                                                                })}
+                                                            </div>
                                                         </div>
-                                                    </div>
+                                                    )}
                                                 </div>
                                             </div>
                                         );
-                                    })}
-                                </div>
+                                    })()
+                                ) : (
+                                    // DEFAULT VIEW: List of all set items
+                                    <>
+                                        <h4 className="text-base font-bold uppercase tracking-widest text-foreground/80 mb-4">Özelleştir</h4>
+                                        <div className="space-y-4">
+                                            {product.set_items.map((item: any) => {
+                                                const selectedItemFabricId = selectedFabrics[item.id] || product.default_fabric_id;
+                                                const selectedItemFabric = fabrics?.find((f: any) => f.id === selectedItemFabricId);
+                                                return (
+                                                    <div key={item.id} className="flex flex-row gap-4 bg-gray-50 p-3 sm:p-4 rounded-xl border border-gray-100">
+                                                        {/* Left: Image (Always visible on mobile & desktop) */}
+                                                        <div className="flex w-14 h-14 sm:w-20 sm:h-20 bg-white border border-gray-200 rounded-lg overflow-hidden shrink-0 items-center justify-center relative mt-1">
+                                                            {item.image_url ? (
+                                                                <img src={item.image_url} alt={item.name} className="w-full h-full object-cover" />
+                                                            ) : (
+                                                                <span className="text-[10px] text-gray-400">Görsel Yok</span>
+                                                            )}
+                                                        </div>
+
+                                                        <div className="flex-1 flex flex-col justify-between min-w-0">
+                                                            <div className="flex flex-wrap sm:flex-nowrap items-start justify-between gap-3 mb-2">
+                                                                <div className="min-w-0">
+                                                                    <p className="font-semibold text-gray-800 text-base truncate">{item.name}</p>
+                                                                    <p className="text-xs text-primary font-medium">+{item.base_price.toLocaleString('tr-TR')} TL</p>
+                                                                </div>
+                                                                <div className="flex items-center gap-2 shrink-0">
+                                                                    <button 
+                                                                        type="button"
+                                                                        onClick={() => setSetQuantities({...setQuantities, [item.id]: Math.max(0, (setQuantities[item.id] || 0) - 1)})}
+                                                                        className="w-7 h-7 flex items-center justify-center border border-gray-300 rounded bg-white hover:bg-gray-100 transition-colors text-sm"
+                                                                    >-</button>
+                                                                    <span className="w-4 text-center font-bold text-sm">{setQuantities[item.id] || 0}</span>
+                                                                    <button 
+                                                                        type="button"
+                                                                        onClick={() => setSetQuantities({...setQuantities, [item.id]: (setQuantities[item.id] || 0) + 1})}
+                                                                        className="w-7 h-7 flex items-center justify-center border border-gray-300 rounded bg-white hover:bg-gray-100 transition-colors text-sm"
+                                                                    >+</button>
+                                                                </div>
+                                                            </div>
+                                                            
+                                                            <div className="flex flex-col gap-2 mt-1">
+                                                                {/* Clickable Fabric Button */}
+                                                                <button
+                                                                    type="button"
+                                                                    onClick={() => {
+                                                                        setActiveSetItemForFabric(item.id);
+                                                                    }}
+                                                                    className="w-full flex justify-between items-center bg-white border border-gray-200/80 hover:border-gray-300 rounded-lg px-3 py-2 transition-all text-xs text-left"
+                                                                >
+                                                                    <div className="flex flex-col">
+                                                                        <span className="font-semibold text-gray-400 uppercase tracking-wider text-[9px]">Kumaş ve Renk Seçimi</span>
+                                                                        <span className="font-medium text-gray-700 mt-0.5">{selectedItemFabric?.name || "Standart Kumaş"}</span>
+                                                                    </div>
+                                                                    <div className="flex items-center gap-2">
+                                                                        {selectedItemFabric?.image_url && (
+                                                                            <img src={selectedItemFabric.image_url} alt="" className="w-6 h-6 rounded-full border border-gray-200 object-cover" />
+                                                                        )}
+                                                                        <ChevronRight size={14} className="text-gray-400" />
+                                                                    </div>
+                                                                </button>
+
+                                                                {/* Clickable Leg Button */}
+                                                                <button
+                                                                    type="button"
+                                                                    onClick={() => {
+                                                                        setActiveSetItemForLeg(item.id);
+                                                                    }}
+                                                                    className="w-full flex justify-between items-center bg-white border border-gray-200/80 hover:border-gray-300 rounded-lg px-3 py-2 transition-all text-xs text-left"
+                                                                >
+                                                                    <div className="flex flex-col">
+                                                                        <span className="font-semibold text-gray-400 uppercase tracking-wider text-[9px]">Ayak Seçimi</span>
+                                                                        <span className="font-medium text-gray-700 mt-0.5">{selectedLegs[item.id] || "Ahşap Meşe"}</span>
+                                                                    </div>
+                                                                    <div className="flex items-center gap-2">
+                                                                        <ChevronRight size={14} className="text-gray-400" />
+                                                                    </div>
+                                                                </button>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                );
+                                            })}
+                                        </div>
+                                    </>
+                                )}
                             </div>
                         )}
 
@@ -723,16 +976,31 @@ export default function ProductPage() {
                 <div className="container mx-auto px-6 flex items-center justify-between gap-4">
                     <div className="flex-1 min-w-0">
                         <div className="flex items-baseline gap-2 flex-wrap">
-                            <span className="text-xl md:text-2xl font-serif text-foreground font-bold leading-none">
+                            <span className="text-2xl sm:text-3xl md:text-4xl font-serif text-foreground font-bold leading-none">
                                 {(finalPrice * quantity).toLocaleString('tr-TR')} TL
                             </span>
                             {quantity > 1 && (
                                 <span className="text-xs text-gray-400">({quantity} adet)</span>
                             )}
                         </div>
-                        <span className="text-xs text-gray-500 font-light truncate block mt-1" title={getCustomizationSummary()}>
-                            {getCustomizationSummary()}
-                        </span>
+                        <div className="flex flex-wrap items-center gap-x-3 gap-y-1 mt-1 text-[11px] text-gray-500">
+                            <span className="font-light truncate block max-w-xs sm:max-w-md" title={getCustomizationSummary()}>
+                                {getCustomizationSummary()}
+                            </span>
+                            {(product.is_free_shipping !== false || product.is_free_installation !== false) && (
+                                <span className="text-gray-300 hidden sm:inline">|</span>
+                            )}
+                            {product.is_free_shipping !== false && (
+                                <span className="text-emerald-700 font-medium bg-emerald-50 px-1.5 py-0.5 rounded-sm">
+                                    Ücretsiz Teslimat
+                                </span>
+                            )}
+                            {product.is_free_installation !== false && (
+                                <span className="text-emerald-700 font-medium bg-emerald-50 px-1.5 py-0.5 rounded-sm">
+                                    Ücretsiz Kurulum
+                                </span>
+                            )}
+                        </div>
                     </div>
                     
                     <div className="flex items-center gap-3 shrink-0">

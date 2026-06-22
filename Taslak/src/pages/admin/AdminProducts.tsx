@@ -274,7 +274,7 @@ export default function AdminProducts() {
                                           const newItems = [...formData.set_items];
                                           newItems[idx].leg_color = e.target.value;
                                           setFormData({ ...formData, set_items: newItems });
-                                      }} placeholder="Boş bırakılırsa 'Standart Ayaklar' görünür." />
+                                      }} placeholder="Boş bırakılırsa varsayılan 5 Ahşap ve 5 Metal seçeneği sunulur." />
                                   </div>
                               </div>
                               

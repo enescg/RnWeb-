@@ -22,7 +22,7 @@ const ProductCard = ({ product, index }: { product: any; index: number }) => {
             onMouseEnter={() => setIsHovered(true)}
             onMouseLeave={() => setIsHovered(false)}
         >
-            <div className="relative aspect-[4/5] overflow-hidden mb-5 bg-card">
+            <Link href={`/product/${product.id}`} className="block relative aspect-[4/5] overflow-hidden mb-5 bg-card">
                 <img
                     src={product.images[0]}
                     alt={product.name}
@@ -35,16 +35,7 @@ const ProductCard = ({ product, index }: { product: any; index: number }) => {
                         </span>
                     </div>
                 )}
-                <motion.div
-                    initial={false}
-                    animate={{ opacity: isHovered ? 1 : 0 }}
-                    className="absolute inset-0 bg-black/30 flex items-center justify-center gap-3"
-                >
-                    <Link href={`/product/${product.id}`} className="px-6 py-3 bg-white text-foreground text-xs uppercase tracking-widest font-medium hover:bg-primary hover:text-white transition-colors">
-                        Detayları Gör
-                    </Link>
-                </motion.div>
-                <div className="absolute top-4 right-4 flex flex-col gap-2">
+                <div className="absolute top-4 right-4 flex flex-col gap-2 z-10">
                     <button 
                         onClick={(e) => { e.preventDefault(); e.stopPropagation(); toggleFavorite(product.id); }}
                         className="w-10 h-10 bg-white/90 backdrop-blur-sm flex items-center justify-center hover:bg-primary hover:text-white transition-colors"
@@ -52,9 +43,11 @@ const ProductCard = ({ product, index }: { product: any; index: number }) => {
                         <Heart size={18} className={isFav ? "fill-primary text-primary" : ""} />
                     </button>
                 </div>
-            </div>
+            </Link>
             <div className="px-1 mt-3">
-                <h3 className="text-lg md:text-xl font-sans font-semibold tracking-wide text-black mb-1.5 group-hover:text-primary transition-colors">{product.name}</h3>
+                <Link href={`/product/${product.id}`} className="block group-hover:text-primary transition-colors">
+                    <h3 className="text-lg md:text-xl font-sans font-semibold tracking-wide text-black mb-1.5">{product.name}</h3>
+                </Link>
                 <div className="flex flex-col mb-3">
                     <span className="text-foreground/50 text-xs md:text-sm line-through">
                         {product.price}

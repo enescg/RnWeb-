@@ -37,10 +37,52 @@ const Navbar = ({ variant = "home", breadcrumbs = [] }: NavbarProps) => {
     // Show full navbar only on home page
     const showFullNavbar = variant === "home";
 
+    // Reusable mobile menu drawer
+    const renderMobileMenu = () => (
+        <AnimatePresence>
+            {mobileMenuOpen && (
+                <motion.div
+                    initial={{ opacity: 0, x: "100%" }}
+                    animate={{ opacity: 1, x: 0 }}
+                    exit={{ opacity: 0, x: "100%" }}
+                    transition={{ type: "tween", duration: 0.4 }}
+                    className="fixed inset-0 z-[60] section-gradient flex flex-col items-center justify-center"
+                >
+                    <button className="absolute top-6 right-6 text-foreground" onClick={() => setMobileMenuOpen(false)}>
+                        <X size={32} />
+                    </button>
+                    <div className="flex flex-col space-y-8 text-2xl font-serif text-center">
+                        <Link href="/categories/salon" onClick={() => setMobileMenuOpen(false)} className="hover:text-primary transition-colors">Salon Takımları</Link>
+                        <Link href="/categories/bahce" onClick={() => setMobileMenuOpen(false)} className="hover:text-primary transition-colors">Bahçe Mobilyaları</Link>
+                        <Link href="/categories/mutfak" onClick={() => setMobileMenuOpen(false)} className="hover:text-primary transition-colors">Mutfak Dolapları</Link>
+                        
+                        <div className="w-16 h-[1px] bg-foreground/20 mx-auto my-4"></div>
+                        
+                        {user ? (
+                            <>
+                                <p className="text-sm font-sans text-foreground/50 uppercase tracking-widest">Hesabım</p>
+                                <Link href="/profile/orders" onClick={() => setMobileMenuOpen(false)} className="text-lg hover:text-primary transition-colors">Siparişlerim</Link>
+                                <Link href="/profile/info" onClick={() => setMobileMenuOpen(false)} className="text-lg hover:text-primary transition-colors">Bilgilerim</Link>
+                                <Link href="/profile/favorites" onClick={() => setMobileMenuOpen(false)} className="text-lg hover:text-primary transition-colors">Favorilerim</Link>
+                                <button onClick={() => { logout(); setMobileMenuOpen(false); }} className="text-lg text-red-500 hover:text-red-400 transition-colors">Çıkış Yap</button>
+                            </>
+                        ) : (
+                            <Link href="/auth" onClick={() => setMobileMenuOpen(false)} className="hover:text-primary transition-colors flex items-center justify-center gap-2">
+                                <User size={24} />
+                                <span>Giriş Yap</span>
+                            </Link>
+                        )}
+                    </div>
+                </motion.div>
+            )}
+        </AnimatePresence>
+    );
+
     // Render sticky breadcrumb bar for category/product pages
     if (!showFullNavbar) {
         return (
-            <nav className="sticky top-0 z-50 bg-background/95 backdrop-blur-md border-b border-border py-4">
+            <>
+                <nav className="sticky top-0 z-50 bg-background/95 backdrop-blur-md border-b border-border py-4">
                 <div className="container mx-auto px-4 md:px-6 flex items-center justify-between gap-2 md:gap-4">
                     {/* Logo - Link to home */}
                     <Link href="/" className="flex-shrink-0">
@@ -174,6 +216,8 @@ const Navbar = ({ variant = "home", breadcrumbs = [] }: NavbarProps) => {
                     </div>
                 </div>
             </nav>
+            {renderMobileMenu()}
+            </>
         );
     }
 
@@ -346,43 +390,7 @@ const Navbar = ({ variant = "home", breadcrumbs = [] }: NavbarProps) => {
                     </nav>
 
                     {/* Mobile Menu */}
-                    <AnimatePresence>
-                        {mobileMenuOpen && (
-                            <motion.div
-                                initial={{ opacity: 0, x: "100%" }}
-                                animate={{ opacity: 1, x: 0 }}
-                                exit={{ opacity: 0, x: "100%" }}
-                                transition={{ type: "tween", duration: 0.4 }}
-                                className="fixed inset-0 z-[60] section-gradient flex flex-col items-center justify-center"
-                            >
-                                <button className="absolute top-6 right-6 text-foreground" onClick={() => setMobileMenuOpen(false)}>
-                                    <X size={32} />
-                                </button>
-                                <div className="flex flex-col space-y-8 text-2xl font-serif text-center">
-                                    <Link href="/categories/salon" onClick={() => setMobileMenuOpen(false)} className="hover:text-primary transition-colors">Salon Takımları</Link>
-                                    <Link href="/categories/bahce" onClick={() => setMobileMenuOpen(false)} className="hover:text-primary transition-colors">Bahçe Mobilyaları</Link>
-                                    <Link href="/categories/mutfak" onClick={() => setMobileMenuOpen(false)} className="hover:text-primary transition-colors">Mutfak Dolapları</Link>
-                                    
-                                    <div className="w-16 h-[1px] bg-foreground/20 mx-auto my-4"></div>
-                                    
-                                    {user ? (
-                                        <>
-                                            <p className="text-sm font-sans text-foreground/50 uppercase tracking-widest">Hesabım</p>
-                                            <Link href="/profile/orders" onClick={() => setMobileMenuOpen(false)} className="text-lg hover:text-primary transition-colors">Siparişlerim</Link>
-                                            <Link href="/profile/info" onClick={() => setMobileMenuOpen(false)} className="text-lg hover:text-primary transition-colors">Bilgilerim</Link>
-                                            <Link href="/profile/favorites" onClick={() => setMobileMenuOpen(false)} className="text-lg hover:text-primary transition-colors">Favorilerim</Link>
-                                            <button onClick={() => { logout(); setMobileMenuOpen(false); }} className="text-lg text-red-500 hover:text-red-400 transition-colors">Çıkış Yap</button>
-                                        </>
-                                    ) : (
-                                        <Link href="/auth" onClick={() => setMobileMenuOpen(false)} className="hover:text-primary transition-colors flex items-center justify-center gap-2">
-                                            <User size={24} />
-                                            <span>Giriş Yap</span>
-                                        </Link>
-                                    )}
-                                </div>
-                            </motion.div>
-                        )}
-                    </AnimatePresence>
+                    {renderMobileMenu()}
                 </>
             )}
         </>

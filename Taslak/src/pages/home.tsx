@@ -386,7 +386,9 @@ const FeaturedPieces = () => {
                 </div>
               </Link>
               <div className="px-1 mt-3">
-                <h3 className="text-lg md:text-xl font-sans font-semibold tracking-wide text-black mb-1.5 group-hover:text-primary transition-colors">{piece.name}</h3>
+                <Link href={`/product/${piece.id}`} className="block group-hover:text-primary transition-colors">
+                  <h3 className="text-lg md:text-xl font-sans font-semibold tracking-wide text-black mb-1.5">{piece.name}</h3>
+                </Link>
                 <div className="flex flex-col mb-3">
                     <span className="text-foreground/50 text-xs md:text-sm line-through">
                         {piece.price}
